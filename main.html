@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>samialzamzami | الصفحة الرئيسية</title>
+  <link rel="icon" href="logo.jpg" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --blue: #007bff;
+      --blue-dark: #004085;
+      --gray: #f9f9f9;
+    }
+
+    body {
+      font-family: 'Cairo', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #ffffff;
+      color: #222;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    header { position: sticky; top: 0; z-index: 1000; }
+
+    section {
+      padding: 60px 20px;
+      text-align: center;
+      background-color: #ffffff;
+    }
+
+    section h2 {
+      font-size: 32px;
+      margin-bottom: 40px;
+      color: var(--blue-dark);
+    }
+
+    .banner {
+      background: linear-gradient(to left, var(--blue), var(--blue-dark));
+      color: white;
+      padding: 100px 20px 120px;
+      text-align: center;
+    }
+
+    .banner-content { max-width: 800px; margin: auto; }
+
+    .banner img {
+      width: 120px;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 4px solid white;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      margin-bottom: 20px;
+    }
+
+    .banner h1 { font-size: 48px; margin-bottom: 15px; }
+
+    .banner p { font-size: 20px; margin: 0 auto; max-width: 600px; }
+
+    footer {
+      background-color: var(--blue-dark);
+      color: white;
+      text-align: center;
+      padding: 40px 20px;
+      margin-top: 60px;
+    }
+
+    .error-log {
+      color: red;
+      font-size: 14px;
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    /* إعلان تسويقي */
+    .promo-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      height: 100vh; width: 100vw;
+      background: rgba(0, 0, 0, 0.35);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      animation: fadeIn 0.4s ease-in-out;
+    }
+
+    #promo-card {
+      background: white;
+      border-radius: 18px;
+      max-width: 400px;
+      width: 90%;
+      padding: 28px 22px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      position: relative;
+      animation: slideUp 0.4s ease-in-out;
+    }
+
+    #promo-card h3 {
+      margin-top: 0;
+      color: #004085;
+      font-size: 22px;
+    }
+
+    #promo-card p {
+      margin: 15px 0 20px;
+      font-size: 16px;
+      line-height: 1.7;
+      color: #333;
+    }
+
+    #promo-card button {
+      background-color: #007bff;
+      color: white;
+      padding: 12px 22px;
+      border: none;
+      border-radius: 10px;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    #promo-card button:hover {
+      background-color: #0056b3;
+      transform: translateY(-2px);
+    }
+
+    #promo-card .close {
+      position: absolute;
+      top: 12px;
+      left: 16px;
+      font-size: 20px;
+      color: #888;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    @media (max-width: 768px) {
+      .banner h1 { font-size: 32px; }
+      .banner p { font-size: 18px; }
+      .banner img { width: 90px; height: 90px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- الشريط العلوي -->
+  <div id="header-placeholder"></div>
+
+  <!-- البنر -->
+  <section class="banner">
+    <div class="banner-content">
+      <img src="logo.jpg" alt="شعار الموقع" />
+      <h1>samialzamzami</h1>
+      <p>خدمات احترافية في برمجة الويب وتطبيقات الجوال وورش تدريبية تقنية متخصصة</p>
+    </div>
+  </section>
+
+  <!-- كرت إعلان -->
+  <div class="promo-overlay" id="promo-overlay">
+    <div id="promo-card">
+      <span class="close" onclick="document.getElementById('promo-overlay').style.display='none'">✕</span>
+      <h3>🚀 تدريب برمجة بايثون</h3>
+<p><strong>من مبتدئ إلى مبرمج</strong><br>أسبوعان يفتحان لك أبواب التقنية والعمل الحر بمساعدة أدوات الذكاء الاصطناعي.</p>
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLScKayP1EjH_pOIBPyxc3yfF4CfugHynB4eApu2d32IwIxVtHA/viewform?usp=header"
+         target="_blank">
+        <button>احجز مقعدك الآن</button>
+      </a>
+    </div>
+  </div>
+
+  <!-- الأقسام -->
+  <div id="workshops-placeholder"></div>
+  <div id="services-placeholder"></div>
+  
+
+  <!-- التذييل -->
+  <div id="footer-placeholder"></div>
+
+  <!-- تحميل الأقسام -->
+  <script>
+    const includes = [
+      { id: "header-placeholder", url: "header.html" },
+      { id: "workshops-placeholder", url: "sections/workshops.html" },
+      { id: "services-placeholder", url: "sections/services.html" },
+      { id: "footer-placeholder", url: "footer.html" },
+    ];
+
+    includes.forEach(({ id, url }) => {
+      fetch(url)
+        .then((res) => {
+          if (!res.ok) throw new Error(`لا يمكن تحميل ${url}`);
+          return res.text();
+        })
+        .then((html) => {
+          const container = document.getElementById(id);
+          container.innerHTML = html;
+          container.querySelectorAll("script").forEach((oldScript) => {
+            const newScript = document.createElement("script");
+            if (oldScript.src) {
+              newScript.src = oldScript.src;
+            } else {
+              newScript.textContent = oldScript.textContent;
+            }    
+            container.appendChild(newScript);
+          });
+        })
+        .catch((err) => {
+          const errorBox = document.createElement("div");
+          errorBox.className = "error-log";
+          errorBox.textContent = err.message;
+          document.getElementById(id).appendChild(errorBox);
+        });
+    });
+  </script>
+
+</body>
+</html>

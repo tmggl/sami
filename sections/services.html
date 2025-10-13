@@ -1,0 +1,188 @@
+<style>
+  #services {
+    padding: 60px 0;
+    background-color: #ffffff;
+    text-align: center;
+    font-family: 'Cairo', sans-serif;
+  }
+
+  #services h2 {
+    font-size: 32px;
+    margin-bottom: 40px;
+    color: #004085;
+  }
+
+  .section-content {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
+    max-width: 1280px;
+    margin: auto;
+    padding: 0 20px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+  }
+
+  .card {
+    background: #ffffff;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease-in-out;
+    transform: translateY(30px);
+    opacity: 0;
+    display: flex;
+    flex-direction: column;
+    min-width: 200px;
+  }
+
+  .card.visible {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  .card img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-bottom: 1px solid #eee;
+  }
+
+  .card h3 {
+    font-size: 17px;
+    margin: 14px 14px 8px;
+    color: #004085;
+  }
+
+  .card p {
+    font-size: 13px;
+    color: #555;
+    margin: 0 14px 10px;
+    flex-grow: 1;
+    line-height: 1.6;
+  }
+
+  .card button {
+    margin: 15px 14px 18px;
+    padding: 9px;
+    background-color: #25D366;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.3s;
+  }
+
+  .card button:hover {
+    background-color: #1ebd5b;
+  }
+
+  @media (max-width: 1200px) {
+    .section-content {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+  }
+
+@media (max-width: 768px) {
+  .section-content {
+    grid-template-columns: 1fr;
+    padding: 0 12px;
+    overflow-x: visible;
+  }
+
+  .card {
+    min-width: auto;
+  }
+
+  .card img {
+    width: 100%;
+    height: auto !important;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    display: block;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .card h3 {
+    font-size: 16px;
+  }
+
+  .card p {
+    font-size: 13px;
+  }
+
+.card button {
+  margin: 15px auto 18px;      /* يوسّط الزر */
+  padding: 10px 20px;
+  width: fit-content;          /* يمنع الامتداد الكامل */
+  background-color: #25D366;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.3s;
+  display: block;
+  text-align: center;
+}
+
+}
+
+</style>
+
+<section id="services">
+  <h2>خدماتنا التقنية</h2>
+  <div class="section-content">
+
+    <div class="card">
+      <img src="images/web-dev.png" alt="برمجة مواقع الويب" />
+      <h3>برمجة مواقع الويب</h3>
+      <p>تطوير مواقع احترافية باستخدام HTML, CSS, JavaScript وواجهات تفاعلية مع تحسين SEO.</p>
+      <button onclick="window.open('https://wa.me/966501424219')">تواصل واتساب</button>
+    </div>
+
+    <div class="card">
+      <img src="images/flutter-app.png" alt="تطبيقات الجوال" />
+      <h3>تطبيقات الجوال بـ Flutter</h3>
+      <p>تطبيقات هجينة قوية على Android وiOS باستخدام Flutter بإتقان وسرعة.</p>
+      <button onclick="window.open('https://wa.me/966501424219')">تواصل واتساب</button>
+    </div>
+
+    <div class="card">
+      <img src="images/server.png" alt="السيرفرات" />
+      <h3>إدارة الخوادم وقاعدة البيانات </h3>
+      <p>تهيئة استضافة، رفع المشروع، إعداد قواعد البيانات وتوزيعها بأمان وكفاءة عالية.</p>
+      <button onclick="window.open('https://wa.me/966501424219')">تواصل واتساب</button>
+    </div>
+
+    <div class="card">
+      <img src="images/internal-systems.png" alt="الأنظمة الداخلية" />
+      <h3>برمجة الأنظمة الداخلية</h3>
+      <p>أنظمة مخصصة للمؤسسات مثل إدارة الموظفين، الموارد، المخزون والفروع بتكامل تام وواجهات سهلة.</p>
+      <button onclick="window.open('https://wa.me/966501424219')">تواصل واتساب</button>
+    </div>
+
+    <div class="card">
+      <img src="images/custom-apps.png" alt="تطبيقات حسب الطلب" />
+      <h3>تطبيقات خاصة حسب الطلب</h3>
+      <p>نطور لك تطبيقك الخاص من الصفر حسب الفكرة والرؤية، مع تجربة مستخدم فريدة وإمكانية نشره على المتاجر.</p>
+      <button onclick="window.open('https://wa.me/966501424219')">تواصل واتساب</button>
+    </div>
+
+  </div>
+</section>
+
+<script>
+  function revealCards() {
+    document.querySelectorAll(".card").forEach(card => {
+      const rect = card.getBoundingClientRect();
+      if (rect.top < window.innerHeight - 100) {
+        card.classList.add("visible");
+      }
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", revealCards);
+  window.addEventListener("scroll", revealCards);
+</script>

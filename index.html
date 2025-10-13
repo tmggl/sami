@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>خطة بايثون والذكاء الاصطناعي | سامي الزمزمي</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root{
+      --primary:#4f46e5;
+      --secondary:#3a0ca3;
+      --accent:#f72585;
+      --success:#16a34a;
+      --text:#fff;
+      --card:rgba(255,255,255,0.15);
+      --radius:18px;
+      --shadow:0 8px 24px rgba(0,0,0,.25);
+    }
+
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      font-family:'Tajawal',sans-serif;
+      color:var(--text);
+      line-height:1.6;
+      min-height:100vh;
+      display:flex;flex-direction:column;align-items:center;
+      background:#000;
+      overflow-x:hidden;
+    }
+
+    /* خلفية النجوم */
+    canvas#stars {
+      position:fixed;
+      inset:0;
+      width:100%;
+      height:100%;
+      background:#000;
+      z-index:-2;
+    }
+
+    .container{width:100%;max-width:1200px;padding:20px;margin:0 auto;z-index:2;position:relative}
+
+    /* الهيدر */
+    header{text-align:center;margin-bottom:30px}
+    header img{
+      width:120px;height:120px;border-radius:50%;
+      border:3px solid #fff;object-fit:cover;box-shadow:var(--shadow);margin-bottom:10px
+    }
+
+    header h1{
+      font-size:clamp(18px, 5.5vw, 36px);
+      font-weight:800;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.6);
+      margin-bottom:6px;
+    }
+    header p{font-size:clamp(12px, 3.4vw, 18px);color:#cbd5e1;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+
+    /* الكروت */
+    .cards-container{
+      display:grid;gap:24px;
+      grid-template-columns:1fr;
+      margin:20px 0 40px;
+    }
+    @media(min-width:768px){.cards-container{grid-template-columns:repeat(2,1fr)}}
+    @media(min-width:1024px){.cards-container{grid-template-columns:repeat(3,1fr)}}
+
+    .card{
+      background:var(--card);
+      border-radius:var(--radius);
+      padding:22px;
+      backdrop-filter:blur(10px);
+      box-shadow:var(--shadow);
+      border:1px solid rgba(255,255,255,.2);
+      transition:.3s;
+      display:flex;flex-direction:column;justify-content:space-between;
+    }
+    .card:hover{transform:translateY(-6px)}
+
+    .icon-container{
+      width:65px;height:65px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+      font-size:26px;color:#fff;margin-bottom:16px
+    }
+    .icon-green{background:linear-gradient(135deg,var(--success),#22c55e)}
+    .icon-purple{background:linear-gradient(135deg,var(--primary),var(--secondary))}
+    .icon-cyan{background:linear-gradient(135deg,#25D366,#128C7E)}
+
+    .card h2{font-size:1.35rem;margin-bottom:10px;color:#fff;font-weight:700}
+    .features-list{list-style:none;margin-bottom:15px}
+    .features-list li{
+      padding:8px 0;border-bottom:1px solid rgba(255,255,255,.15);
+      display:flex;align-items:center;font-size:.95rem
+    }
+    .features-list li:last-child{border-bottom:none}
+    .features-list i{margin-left:8px;color:var(--primary)}
+
+    .card-actions{
+      margin-top:auto;display:flex;justify-content:center;gap:12px;flex-wrap:wrap
+    }
+    .btn{
+      display:inline-flex;justify-content:center;align-items:center;gap:8px;
+      padding:12px 16px;border-radius:10px;font-weight:700;text-decoration:none;
+      font-size:.9rem;cursor:pointer;transition:.3s;min-width:120px;text-align:center
+    }
+    .btn-primary{background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;border:none}
+    .btn-primary:hover{opacity:.9;transform:translateY(-2px)}
+    .btn-learn{
+      background:rgba(255,255,255,.85);
+      color:#111;
+      border:2px solid rgba(255,255,255,.9);
+    }
+    .btn-learn:hover{
+      background:#fff;
+      transform:translateY(-2px);
+    }
+    .btn-whatsapp{background:linear-gradient(135deg,#25D366,#128C7E);color:#fff}
+    .btn-whatsapp:hover{opacity:.9;transform:translateY(-2px)}
+
+    footer{text-align:center;margin:20px 0;color:#e2e8f0;font-size:.85rem}
+  </style>
+</head>
+<body>
+  <!-- خلفية النجوم -->
+  <canvas id="stars"></canvas>
+
+  <div class="container">
+    <!-- الهيدر -->
+    <header>
+      <img src="logo.jpg" alt="شعار سامي الزمزمي" />
+      <h1>خطة بايثون والذكاء الاصطناعي لبناء المواقع والأنظمة</h1>
+      <p>رقم الاعتماد: <strong>119884</strong></p>
+    </header>
+
+    <!-- الكروت -->
+    <div class="cards-container">
+      <!-- دورة حضورية -->
+      <div class="card">
+        <div>
+          <div class="icon-container icon-green"><i class="fas fa-chalkboard-teacher"></i></div>
+          <h2>حجز مقعد دورة تدريب حضوري - الرياض</h2>
+          <ul class="features-list">
+            <li><i class="fas fa-map-marker-alt"></i> المدينة: الرياض</li>
+            <li><i class="fas fa-clock"></i> 60 ساعة تدريبية لمدة أسبوعين</li>
+            <li><i class="fas fa-clock"></i> من 5 عصرًا حتى 10 مساءً</li>
+            <li><i class="fas fa-user-friends"></i> رجال ونساء</li>
+            <li><i class="fas fa-calendar-alt"></i> تقام كل شهر ميلادي</li>
+          </ul>
+        </div>
+        <div class="card-actions">
+          <a href="https://forms.gle/Gy3i6iteJLnJUnEk9" target="_blank" class="btn btn-primary">
+            <i class="fas fa-ticket-alt"></i> احجز مقعدك
+          </a>
+          <a href="learn.html" class="btn btn-learn">
+            <i class="fas fa-info-circle"></i> ماذا ستتعلم؟
+          </a>
+        </div>
+      </div>
+
+      <!-- دورة عن بُعد -->
+      <div class="card">
+        <div>
+          <div class="icon-container icon-purple"><i class="fas fa-laptop-house"></i></div>
+          <h2>حجز مقعد دورة عن بُعد</h2>
+          <ul class="features-list">
+            <li><i class="fas fa-calendar-alt"></i> تقام كل شهر ميلادي</li>
+            <li><i class="fas fa-clock"></i> المدة: أسبوعان</li>
+            <li><i class="fas fa-clock"></i> من 5 عصرًا حتى 8 مساءً</li>
+            <li><i class="fas fa-user-friends"></i> رجال ونساء</li>
+          </ul>
+        </div>
+        <div class="card-actions">
+          <a href="https://forms.gle/ey93DxCtGUsFQtym6" target="_blank" class="btn btn-primary">
+            <i class="fas fa-ticket-alt"></i> احجز مقعدك
+          </a>
+          <a href="learn.html" class="btn btn-learn">
+            <i class="fas fa-info-circle"></i> ماذا ستتعلم؟
+          </a>
+        </div>
+      </div>
+
+      <!-- واتساب -->
+      <div class="card">
+        <div>
+          <div class="icon-container icon-cyan"><i class="fab fa-whatsapp"></i></div>
+          <h2>تواصل مباشر عبر واتساب</h2>
+          <ul class="features-list">
+            <li><i class="fas fa-comments"></i> تواصل مباشر مع المدرب</li>
+            <li><i class="fas fa-phone-alt"></i> <strong>0501424219</strong></li>
+            <li><i class="fas fa-clock"></i> متاح خلال أوقات الدوام الرسمية</li>
+          </ul>
+        </div>
+        <div class="card-actions">
+          <a href="https://wa.me/966501424219?text=السلام%20عليكم%20حاب%20استفسر%20عن%20خطة%20بايثون%20والذكاء%20الاصطناعي" target="_blank" class="btn btn-whatsapp">
+            <i class="fab fa-whatsapp"></i> تواصل واتساب
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>© جميع الحقوق محفوظة - سامي الزمزمي</p>
+    </footer>
+  </div>
+
+  <!-- سكربت النجوم -->
+  <script>
+    const canvas = document.getElementById("stars");
+    const ctx = canvas.getContext("2d");
+    let stars = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      stars = Array.from({length: 200}, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radius: Math.random() * 1.5,
+        speed: Math.random() * 0.8 + 0.2
+      }));
+    }
+
+    function drawStars() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "white";
+      for (let s of stars) {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+        ctx.fill();
+        s.y += s.speed;
+        if (s.y > canvas.height) {
+          s.y = 0;
+          s.x = Math.random() * canvas.width;
+        }
+      }
+      requestAnimationFrame(drawStars);
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+    drawStars();
+  </script>
+</body>
+</html>

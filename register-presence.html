@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>تسجيل الورشة عن بُعد | سامي الزمزمي</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#4361ee;
+    --secondary:#3a0ca3;
+    --accent:#f72585;
+    --success:#10b981;
+    --danger:#dc2626;
+    --ink:#0f172a;
+    --card:rgba(255,255,255,0.85);
+    --radius:14px;
+    --shadow:0 6px 18px rgba(0,0,0,.25);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Tajawal',sans-serif;
+    color:var(--ink);
+    line-height:1.6;
+    min-height:100vh;
+    padding:12px;
+    position:relative;
+  }
+
+  /* ===== خلفية الفيديو + الطبقة ===== */
+  .video-bg{position:fixed; inset:0; z-index:-2; overflow:hidden}
+  .video-bg video{width:100%; height:100%; object-fit:cover}
+  .video-bg::after{
+    content:""; position:absolute; inset:0;
+    background:linear-gradient(135deg, rgba(15,23,42,0.55), rgba(30,41,59,0.65));
+    z-index:1;
+  }
+
+  header{
+    text-align:center; margin-bottom:16px; position:relative; z-index:2;
+  }
+  header img{
+    width:80px;height:80px;border-radius:50%;
+    object-fit:cover; box-shadow:var(--shadow); margin-bottom:10px;
+    border:3px solid #fff;
+  }
+  header h1{
+    font-size:1.35rem; font-weight:800; color:#fff;
+    text-shadow:0 2px 6px rgba(0,0,0,.5); margin-bottom:6px;
+  }
+  header p{
+    font-size:.9rem; color:#f1f5f9; text-shadow:0 1px 3px rgba(0,0,0,.6);
+  }
+
+  /* زر ماذا ستتعلم */
+  .accordion-link{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    text-decoration:none;
+    background:rgba(255,255,255,0.86);
+    color:#111; font-weight:800;
+    font-size:clamp(.9rem, 2.2vw, 1rem);
+    padding:14px 18px;
+    border-radius:16px;
+    border:1px solid rgba(255,255,255,.95);
+    box-shadow:0 8px 24px rgba(0,0,0,.20);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    margin:10px auto 18px;
+    width:100%; max-width:650px;
+    position:relative; z-index:2;
+    transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
+  }
+  .accordion-link:hover{
+    transform:translateY(-2px);
+    background:#fff;
+    box-shadow:0 10px 28px rgba(0,0,0,.22);
+  }
+
+  /* تخطيط المحتوى */
+  .page-container{
+    position:relative; z-index:2;
+    display:flex; flex-direction:column; gap:16px;
+    max-width:1200px; margin:0 auto;
+  }
+
+  .form-card, .summary-card{
+    background:var(--card);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:16px;
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+  }
+
+  .form-card h2{
+    font-size:1rem; font-weight:700; color:var(--primary);
+    margin-bottom:12px; display:flex; align-items:center; gap:6px;
+  }
+
+  .form-group{margin-bottom:12px}
+  label{display:block; font-size:.85rem; font-weight:600; margin-bottom:6px; color:#0f172a}
+  input, textarea{
+    width:100%; padding:9px; border-radius:10px;
+    border:1px solid #ddd; font-size:.85rem; font-family:inherit; background:#f9fafb;
+  }
+  input:focus, textarea:focus{
+    border-color:var(--primary); outline:none;
+    box-shadow:0 0 0 2px rgba(67,97,238,.15); background:#fff;
+  }
+  textarea{resize:none}
+
+  .choices-grid{display:flex; flex-direction:column; gap:6px}
+  .choice-card{
+    display:flex; align-items:center; gap:6px;
+    padding:8px; border:1px solid #ddd; border-radius:8px; cursor:pointer;
+    font-size:.85rem; background:#f9fafb; transition:.2s;
+  }
+  .choice-card:hover{border-color:var(--primary); background:#eef2ff}
+  .choice-card input{
+    appearance:none; width:14px; height:14px; border:2px solid var(--primary);
+    border-radius:50%; position:relative; cursor:pointer;
+  }
+  .choice-card input:checked::before{
+    content:""; position:absolute; width:8px; height:8px;
+    top:50%; left:50%; transform:translate(-50%,-50%);
+    background:var(--primary); border-radius:50%;
+  }
+
+  .submit-btn{
+    width:100%; padding:12px; border:none; border-radius:10px;
+    background:linear-gradient(135deg,var(--primary),var(--secondary));
+    color:#fff; font-size:.9rem; font-weight:700; cursor:pointer;
+    margin-top:8px; transition:.2s;
+  }
+  .submit-btn:hover{opacity:.92; transform:translateY(-1px)}
+
+  .summary-card{border-top:3px solid var(--success)}
+  .summary-card h3{font-size:.95rem; color:var(--success); margin-bottom:10px}
+  .summary-item{
+    display:flex; justify-content:space-between;
+    font-size:.8rem; padding:6px 0; border-bottom:1px solid #e5e7eb; color:#0f172a;
+  }
+  .summary-item:last-child{border-bottom:none}
+
+  .message{
+    margin-top:12px;
+    padding:10px;
+    border-radius:8px;
+    font-size:.85rem;
+    display:none;
+  }
+  .success{background:#d1fae5;color:var(--success);border:1px solid var(--success)}
+  .error{background:#fee2e2;color:var(--danger);border:1px solid var(--danger)}
+
+  footer{
+    margin-top:24px; text-align:center; font-size:.78rem;
+    color:#e2e8f0; text-shadow:0 1px 3px rgba(0,0,0,.6);
+    position:relative; z-index:2;
+  }
+  footer a{color:#dbeafe; text-decoration:underline}
+
+  @media(min-width:992px){
+    body{padding:40px}
+    header h1{font-size:1.6rem}
+    .page-container{
+      display:grid; grid-template-columns:2fr 1fr; gap:24px; align-items:start;
+    }
+    .form-card, .summary-card{padding:24px}
+    label, input{font-size:.95rem}
+  }
+</style>
+</head>
+<body>
+  <!-- خلفية الفيديو -->
+  <div class="video-bg">
+    <video autoplay muted loop playsinline>
+      <source src="assets/Background.mp4" type="video/mp4">
+      متصفحك لا يدعم تشغيل الفيديو
+    </video>
+  </div>
+
+  <!-- الهيدر -->
+  <header>
+    <img src="logo.jpg" alt="شعار سامي الزمزمي">
+    <h1>التسجيل في ورشةالتدريب الحضوري </h1>
+    <p>برنامج تدريبي تفاعلي مع سامي الزمزمي</p>
+  </header>
+
+  <!-- زر ماذا ستتعلم -->
+  <a class="accordion-link" href="learn.html" target="_blank" rel="noopener">
+    <span class="emoji">📘</span>
+    <span>ماذا ستتعلم من هذه الورشة؟</span>
+  </a>
+
+  <!-- المحتوى -->
+  <div class="page-container">
+    <!-- النموذج -->
+    <form class="form-card" id="registerForm">
+      <h2>📌 نموذج التسجيل</h2>
+
+      <!-- سؤال الفترة أولاً -->
+      <div class="form-group">
+        <label>أختر الفترة (كلاهما مع المدرب سامي الزمزمي):</label>
+        <div class="choices-grid">
+          <label class="choice-card"><input type="radio" name="time" required><span>من 1 ظهراً – 5 مساءً (سيدات)</span></label>
+          <label class="choice-card"><input type="radio" name="time"><span>من 5 – 10 مساءً (عامة)</span></label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>الاسم *</label>
+        <input type="text" name="name" required placeholder="اكتب اسمك الثلاثي">
+      </div>
+
+      <div class="form-group">
+        <label>الجوال *</label>
+        <input type="tel" name="phone" required placeholder="05XXXXXXXX" inputmode="tel" pattern="^05\d{8}$">
+      </div>
+
+      <div class="form-group">
+        <label>العمر *</label>
+        <input type="number" name="age" min="15" required>
+      </div>
+
+      <div class="form-group">
+        <label>المؤهل العلمي *</label>
+        <input type="text" name="degree" required>
+      </div>
+
+      <div class="form-group">
+        <label>المدينة *</label>
+        <input type="text" name="city" required>
+      </div>
+
+      <div class="form-group">
+        <label>هل لديك خبرة تامة بالتعامل مع اللابتوب وأجهزة الكمبيوتر بصفه عامة؟ *</label>
+        <div class="choices-grid">
+          <label class="choice-card"><input type="radio" name="computer" required><span>نعم</span></label>
+          <label class="choice-card"><input type="radio" name="computer"><span>لا</span></label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>ما مدى إجادتك لقراءة اللغة الإنجليزية؟ *</label>
+        <div class="choices-grid">
+          <label class="choice-card"><input type="radio" name="english" required><span>ممتازة</span></label>
+          <label class="choice-card"><input type="radio" name="english"><span>متوسط</span></label>
+          <label class="choice-card"><input type="radio" name="english"><span>لا أستطيع قراءة أي كلمة أو تمييزها</span></label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>هل لديك جهاز لابتوب بالمواصفات التالية: <br>الهاردسك SSD والمعالج لا يقل عن i5؟ *</label>
+        <div class="choices-grid">
+          <label class="choice-card"><input type="radio" name="laptop" required><span>نعم</span></label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>الورشة تقام فقط حضورياً في مدينة الرياض *</label>
+        <div class="choices-grid">
+          <label class="choice-card"><input type="radio" name="riyadh" required><span>نعم، سألتزم بالحضور</span></label>
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn">📨 إرسال الطلب</button>
+      <div id="formMessage" class="message"></div>
+    </form>
+
+    <!-- الملخص -->
+<div class="summary-card">
+  <h3>📊 ملخص الورشة</h3>
+  <div class="summary-item"><span>المدة</span><b>12 يوم</b></div>
+  <div class="summary-item"><span>الوقت</span><b>من 5 مساءً حتى 10 مساءً</b></div>
+  <div class="summary-item"><span>السعر</span><b>2800 ريال</b></div>
+  <div class="summary-item"><span>المكان</span><b>الرياض (حضوري)</b></div>
+  <div class="summary-item"><span>المقاعد</span><b>40 مقعد</b></div>
+  <div class="summary-item"><span>الفترات</span><b>فترتين مختلفتين</b></div>
+  <div class="summary-item"><span>التواصل</span><b>0501424219</b></div>
+</div>
+
+    <p>© جميع الحقوق محفوظة - سامي الزمزمي</p>
+  </footer>
+
+<script>
+  const form = document.getElementById('registerForm');
+  const msg = document.getElementById('formMessage');
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+
+    if(!form.checkValidity()){
+      msg.style.display = "block";
+      msg.className = "message error";
+      msg.textContent = "⚠️ يرجى تعبئة جميع الحقول بشكل صحيح.";
+      return;
+    }
+
+    msg.style.display = "block";
+    msg.className = "message success";
+    msg.textContent = "✅ تم إرسال طلب التسجيل بنجاح. سنتواصل معك قريبًا.";
+    form.reset();
+  });
+</script>
+</body>
+</html>

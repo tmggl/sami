@@ -1,0 +1,173 @@
+<header style="background-color: #ffffff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); position: sticky; top: 0; z-index: 1000; font-family: 'Cairo', sans-serif;">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+
+    .nav-container {
+      max-width: 1300px;
+      margin: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      flex-wrap: wrap;
+    }
+
+    .brand-info {
+      text-align: right;
+      line-height: 1.4;
+      font-size: 13px;
+      color: #555;
+    }
+
+    .brand-title {
+      font-size: 1.3em; /* تم تصغيره من 1.6 */
+      color: #004085;
+      font-weight: bold;
+      margin-top: 3px;
+    }
+
+    nav.nav-links {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    nav.nav-links a {
+      color: #1e293b;
+      font-weight: 600;
+      text-decoration: none;
+      transition: color 0.3s;
+      cursor: pointer;
+    }
+
+    nav.nav-links a:hover {
+      color: #007bff;
+    }
+
+    .whatsapp-btn {
+      background-color: #25D366;
+      color: white;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-weight: bold;
+      text-decoration: none;
+      transition: background 0.3s;
+    }
+
+    .whatsapp-btn:hover {
+      background-color: #1da851;
+    }
+
+    .menu-toggle {
+      display: none;
+      flex-direction: column;
+      cursor: pointer;
+    }
+
+    .menu-toggle span {
+      height: 3px;
+      width: 25px;
+      background: #004085;
+      margin: 4px 0;
+      border-radius: 3px;
+    }
+
+    @media (min-width: 769px) {
+      .nav-container {
+        flex-direction: row-reverse;
+      }
+
+      .nav-links {
+        margin-left: auto;
+      }
+
+      .brand-info {
+        text-align: right;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .menu-toggle {
+        display: flex;
+      }
+
+      nav.nav-links {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        background-color: #f9f9f9;
+        padding: 15px 10px;
+        border-top: 1px solid #ddd;
+        margin-top: 10px;
+      }
+
+      nav.nav-links a,
+      .whatsapp-btn {
+        width: 100%;
+        text-align: center;
+        padding: 10px 0;
+      }
+
+      nav.nav-links.show {
+        display: flex;
+      }
+
+      .nav-container {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .brand-info {
+        text-align: center;
+        width: 100%;
+        margin-bottom: 10px;
+      }
+    }
+  </style>
+
+  <div class="nav-container">
+    <!-- الاسم + النص التعريفي -->
+    <div class="brand-info">
+      مؤسسة سامي الحسن الزمزمي<br>
+      الرياض - 7050062491
+      <div class="brand-title">samialzamzami</div>
+    </div>
+
+    <!-- زر القائمة للجوال -->
+    <div class="menu-toggle" onclick="document.querySelector('.nav-links').classList.toggle('show')">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+
+    <!-- الروابط -->
+    <nav class="nav-links">
+      <a href="index.html"><i class="fas fa-home"></i> الرئيسية</a>
+      <a data-scroll-to="workshops">الورش</a>
+      <a data-scroll-to="services">الخدمات</a>
+      <a href="privacy.html"><i class="fas fa-shield-alt"></i>سياسة الخصوصية</a>
+      <a data-scroll-to="contact">تواصل معنا</a>
+      <a class="whatsapp-btn" href="https://wa.me/966501424219" target="_blank">تواصل واتساب</a>
+    </nav>
+  </div>
+
+  <script>
+    document.addEventListener("click", function (e) {
+      const target = e.target.closest('[data-scroll-to]');
+      if (target) {
+        e.preventDefault();
+        const id = target.getAttribute('data-scroll-to');
+        const tryScroll = () => {
+          const el = document.getElementById(id) || document.querySelector(`[data-section="${id}"]`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth' });
+          } else {
+            setTimeout(tryScroll, 100);
+          }
+        };
+        tryScroll();
+      }
+    });
+  </script>
+</header>

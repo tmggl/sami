@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>لوحة الإدمن | تسجيلات الورشة</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --primary:#2563eb;
+      --accent:#f97316;
+      --bg:#f9fafb;
+      --text:#111827;
+      --muted:#6b7280;
+      --radius:14px;
+      --shadow:0 6px 18px rgba(0,0,0,.1);
+    }
+    body{
+      font-family:'Tajawal',sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      margin:0;
+      padding:16px;
+      display:flex;justify-content:center;align-items:flex-start;
+    }
+    .container{width:100%;max-width:1200px}
+    .card{
+      background:#fff;
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:20px;
+      margin:20px auto;
+    }
+    h1{color:var(--primary);margin-bottom:10px;font-size:1.4rem}
+    .login-card{max-width:420px;text-align:center;margin-top:10%}
+    .login-card input{
+      width:100%;padding:12px;border:1px solid #ddd;border-radius:10px;
+      margin-bottom:12px;font-family:inherit
+    }
+    .btn{
+      cursor:pointer;border:none;border-radius:10px;
+      padding:12px;font-weight:700;font-size:.95rem;transition:.2s
+    }
+    .btn-primary{
+      background:linear-gradient(135deg,var(--primary),var(--accent));
+      color:#fff;width:100%
+    }
+    .btn-primary:hover{opacity:.9}
+    .btn-danger{background:#ef4444;color:#fff;padding:10px 16px;margin-bottom:16px}
+    .btn-toggle{
+      padding:10px 20px;margin:5px;
+      background:#fff;border:1px solid #ddd;
+      border-radius:10px;cursor:pointer;font-weight:600
+    }
+    .btn-toggle.active{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border:none}
+    .hidden{display:none}
+    table{width:100%;border-collapse:collapse;margin-top:20px;font-size:.85rem}
+    th,td{padding:10px;border:1px solid #eee;text-align:center}
+    th{background:var(--primary);color:#fff}
+    tr:nth-child(even){background:#f9fafb}
+    tr:hover{background:#f3f4f6}
+    a{color:var(--accent);font-weight:600;text-decoration:none}
+    a:hover{text-decoration:underline}
+    .filter-box{margin-top:10px;display:flex;gap:10px;flex-wrap:wrap}
+    .filter-box input{
+      flex:1;min-width:200px;padding:10px;border:1px solid #ddd;border-radius:8px
+    }
+    .toggle-box{text-align:center;margin-bottom:15px}
+    @media(max-width:768px){
+      th,td{padding:8px;font-size:.78rem}
+      h1{font-size:1.1rem}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- تسجيل الدخول -->
+    <div class="card login-card" id="loginCard">
+      <h2>🔒 دخول لوحة الإدمن</h2>
+      <input type="email" id="emailInput" placeholder="البريد الإلكتروني" required>
+      <input type="password" id="passwordInput" placeholder="كلمة المرور" required>
+      <button id="loginBtn" class="btn btn-primary">تسجيل الدخول</button>
+    </div>
+
+    <!-- لوحة البيانات -->
+    <div class="card hidden" id="adminPanel">
+      <h1>لوحة الإدمن — تسجيلات الورشة</h1>
+      <button id="logoutBtn" class="btn btn-danger">تسجيل الخروج</button>
+
+      <!-- كروت الفلترة -->
+      <div class="toggle-box">
+        <button class="btn-toggle active" id="showAll">📋 الكل</button>
+        <button class="btn-toggle" id="showOnline">💻 عن بُعد</button>
+        <button class="btn-toggle" id="showOnsite">🏫 حضوري</button>
+      </div>
+
+      <!-- مربع البحث -->
+      <div class="filter-box">
+        <input type="text" id="searchInput" placeholder="🔍 ابحث بالاسم أو المدينة أو الجوال">
+      </div>
+
+      <!-- الجدول -->
+      <div id="rows">جارٍ التحميل…</div>
+    </div>
+
+  </div>
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBe7_IpqJhfgwxb1uKNMun4IRJLVDF18Qc",
+      authDomain: "sami-993c4.firebaseapp.com",
+      projectId: "sami-993c4",
+      storageBucket: "sami-993c4.appspot.com",
+      messagingSenderId: "1039087979161",
+      appId: "1:1039087979161:web:a7cc7244feba5ef5f90608"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const loginCard = document.getElementById('loginCard');
+    const adminPanel = document.getElementById('adminPanel');
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const emailInput = document.getElementById('emailInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const searchInput = document.getElementById('searchInput');
+    const rowsDiv = document.getElementById('rows');
+    const showAll = document.getElementById('showAll');
+    const showOnline = document.getElementById('showOnline');
+    const showOnsite = document.getElementById('showOnsite');
+
+    let registrations = [];
+    let currentFilter = "all";
+
+    // تسجيل الدخول
+    loginBtn.onclick = async () => {
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+      if(!email || !password){ alert("⚠️ أدخل البريد وكلمة المرور"); return; }
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        loginCard.classList.add("hidden");
+        adminPanel.classList.remove("hidden");
+        loadData();
+      } catch (err) { alert("❌ خطأ: " + err.message); }
+    };
+
+    // تسجيل الخروج
+    logoutBtn.onclick = async () => {
+      await signOut(auth);
+      adminPanel.classList.add("hidden");
+      loginCard.classList.remove("hidden");
+    };
+
+    // تحميل البيانات
+    async function loadData(){
+      try {
+        const snapshot = await getDocs(collection(db, "registrations"));
+        registrations = [];
+        snapshot.forEach(doc=>registrations.push(doc.data()));
+        renderTable(registrations);
+      } catch (err) {
+        rowsDiv.innerHTML = "❌ فشل تحميل البيانات: " + err.message;
+      }
+    }
+
+    // عرض الجدول
+    function renderTable(data){
+      let html = `<table><tr>
+        <th>الفترة</th>
+        <th>الاسم</th>
+        <th>الجوال</th>
+        <th>العمر</th>
+        <th>المؤهل</th>
+        <th>المدينة</th>
+        <th>الكمبيوتر</th>
+        <th>الإنجليزية</th>
+        <th>اللابتوب</th>
+        <th>الحضور بالرياض</th>
+        <th>الحالة</th>
+        <th>تاريخ التسجيل</th>
+      </tr>`;
+      data.forEach(d=>{
+        html += `<tr>
+          <td>${d.time||''}</td>
+          <td>${d.name||''}</td>
+          <td><a href="https://wa.me/${(d.phone||'').replace(/^0/,'966')}" target="_blank">${d.phone||''}</a></td>
+          <td>${d.age||''}</td>
+          <td>${d.degree||''}</td>
+          <td>${d.city||''}</td>
+          <td>${d.computer||''}</td>
+          <td>${d.english||''}</td>
+          <td>${d.laptop||''}</td>
+          <td>${d.riyadh||''}</td>
+          <td>${d.status || 'جديد'}</td>
+          <td>${d.createdAt||''}</td>
+        </tr>`;
+      });
+      html += `</table>`;
+      rowsDiv.innerHTML = html;
+    }
+
+    // فلترة حسب البحث
+    searchInput.oninput = () => applyFilters();
+
+    // أزرار الفلترة
+    showAll.onclick = () => { setActive(showAll); currentFilter = "all"; applyFilters(); }
+    showOnline.onclick = () => { setActive(showOnline); currentFilter = "online"; applyFilters(); }
+    showOnsite.onclick = () => { setActive(showOnsite); currentFilter = "onsite"; applyFilters(); }
+
+    function setActive(btn){
+      [showAll, showOnline, showOnsite].forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+    }
+
+    function applyFilters(){
+      const q = searchInput.value.toLowerCase();
+      let filtered = registrations.filter(r =>
+        (r.name||'').toLowerCase().includes(q) ||
+        (r.city||'').toLowerCase().includes(q) ||
+        (r.phone||'').toLowerCase().includes(q)
+      );
+
+      if(currentFilter === "online"){
+        filtered = filtered.filter(r => (r.riyadh||'').toLowerCase() !== "نعم");
+      } else if(currentFilter === "onsite"){
+        filtered = filtered.filter(r => (r.riyadh||'').toLowerCase() === "نعم");
+      }
+
+      renderTable(filtered);
+    }
+
+    // مراقبة حالة الدخول
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        adminPanel.classList.add("hidden");
+        loginCard.classList.remove("hidden");
+      }
+    });
+  </script>
+</body>
+</html>

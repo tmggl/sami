@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>ورش بايثون والذكاء الاصطناعي | سامي الزمزمي</title>
+  <meta name="color-scheme" content="dark"> <!-- داكن دائمًا -->
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      /* الهوية الداكنة الدائمة */
+      --bg:#0b1220;
+      --ink:#e8edf7;
+      --muted:#a8b0bf;
+      --brand:#3b82f6; --brand-d:#1e40af; --accent:#0ea5e9;
+
+      --card:rgba(255,255,255,.08);
+      --card-border:rgba(255,255,255,.16);
+      --shadow:0 18px 44px rgba(2,6,23,.35);
+      --radius:16px; --blur:12px; --ring:0 0 0 3px rgba(59,130,246,.35);
+
+      --maxw:1100px; --gap:18px; --pad:20px;
+
+      /* صف بند/إجابة داخل مستطيل واحد منقسم */
+      --key-col: 220px;             
+      --cell-pad: 12px;
+      --pair-bg: rgba(255,255,255,.06);
+      --val-bg:#111827; /* ألغيت اللمعة، داكن ثابت */
+      --val-ink:#f8fbff; 
+      --val-border:rgba(255,255,255,.18);
+
+      /* الفاصل المائل */
+      --slash-w: 22px;
+      --slash-color: rgba(255,255,255,.28);
+      --slash-angle: -18deg;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:"Cairo",system-ui,-apple-system,"Segoe UI",Roboto;
+      color:var(--ink); background:var(--bg);
+      -webkit-font-smoothing:antialiased; line-height:1.85;
+      padding-left:max(12px, env(safe-area-inset-left));
+      padding-right:max(12px, env(safe-area-inset-right));
+    }
+
+    /* ===== الهيدر ===== */
+    header{
+      position:relative; overflow:hidden; isolation:isolate;
+      padding:46px 18px 64px; margin-bottom:16px;
+      border-bottom-left-radius:26px; border-bottom-right-radius:26px;
+    }
+    header::before{display:none} /* ألغيت الطبقة الزرقاء الشفافة */
+
+    .wrap{ max-width:var(--maxw); margin:0 auto 56px; padding:0 12px; }
+    .header-inner{ text-align:center }
+    .header-inner h1{ margin:0; font-size:clamp(22px,4.5vw,36px); font-weight:800 }
+    .header-inner p{ margin:8px 0 0; color:var(--muted); font-size:clamp(13px,2.6vw,16px) }
+
+    /* ===== تبويبات ===== */
+    .tabs{
+      position:sticky; top:8px; z-index:20;
+      display:flex; gap:10px; width:min(720px,100%);
+      margin:0 auto 18px; padding:10px;
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--card-border); border-radius:16px;
+      backdrop-filter:blur(var(--blur)); box-shadow:var(--shadow);
+    }
+    .tabs button{
+      flex:1; border:0; cursor:pointer; outline:none;
+      padding:12px 14px; border-radius:12px; min-height:48px;
+      background:transparent; color:var(--ink);
+      font-weight:800; font-size:14px; letter-spacing:.2px; transition:.18s ease;
+    }
+    .tabs button[aria-pressed="true"]{
+      background:linear-gradient(135deg, rgba(59,130,246,.25), rgba(30,64,175,.45));
+      border:1px solid rgba(59,130,246,.35);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 10px 24px rgba(37,99,235,.25);
+    }
+    .tabs button:focus-visible{ box-shadow:var(--ring) }
+
+    /* ===== شبكة الكروت ===== */
+    .grid{
+      display:grid; gap:var(--gap);
+      grid-template-columns:1fr;
+      opacity:0; transform:translateY(8px);
+      animation:fadeIn .4s ease forwards;
+    }
+    @media (min-width:760px){ .grid{ grid-template-columns:1fr 1fr } }
+    @keyframes fadeIn{to{opacity:1; transform:translateY(0)}}
+
+    /* ===== الكرت ===== */
+    .card{
+      background:var(--card);
+      border:1px solid var(--card-border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(var(--blur));
+      padding:var(--pad);
+      transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+      overflow:hidden;
+    }
+    .card:hover{ transform:translateY(-3px); box-shadow:0 22px 54px rgba(0,0,0,.45); border-color:rgba(255,255,255,.22) }
+    .title{ margin:0 0 14px; font-weight:800; font-size:clamp(18px,2.2vw,20px); color:#fff }
+
+    /* ===== صف (بند + إجابة) داخل مستطيل واحد منقسم ===== */
+    .pairs{ display:grid; gap:10px; }
+
+    .pair{
+      position:relative; overflow:hidden;
+      display:grid; grid-template-columns: var(--key-col) minmax(0,1fr);
+      align-items:stretch; background:var(--pair-bg);
+      border:1px solid var(--card-border);
+      border-radius:12px;
+    }
+.pair::before{
+  display:none; /* 🚫 إلغاء الخط المائل الشفاف */
+}
+
+
+    .k, .v{ padding:var(--cell-pad); min-width:0; display:flex; align-items:center }
+    .k{ font-size:13px; font-weight:800; color:#cfd9ee; }
+    .v{
+      background:var(--val-bg); color:var(--val-ink);
+      border-inline-start:1px solid var(--val-border);
+      font-size:13.5px; font-weight:800; letter-spacing:.2px;
+      overflow-wrap:anywhere; white-space:normal;
+    }
+
+    /* إبراز سطر الموعد */
+    .pair.is-date .v{
+      background:#98d72286; /* داكن أخضر بسيط */
+      border-inline-start:1px solid rgba(16,185,129,.35);
+    }
+
+    /* الأزرار */
+    .cta{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px }
+    .btn{
+      appearance:none; border:1px solid rgba(255,255,255,.14);
+      background:linear-gradient(135deg,var(--brand),var(--brand-d));
+      color:#fff; border-radius:12px; padding:12px 14px;
+      font-weight:800; font-size:14px; letter-spacing:.2px;
+      box-shadow:0 14px 32px rgba(37,99,235,.32);
+      text-decoration:none; outline:none; cursor:pointer; transition:.16s ease;
+    }
+    .btn:hover{ transform:translateY(-2px) }
+    .btn:focus-visible{ box-shadow:var(--ring) }
+    .btn.ghost{
+      background:transparent; color:#dbeafe; border:1px solid rgba(148,163,184,.35); box-shadow:none;
+    }
+    .btn.ghost:hover{ background:linear-gradient(135deg, rgba(59,130,246,.12), rgba(14,165,233,.12)) }
+    @media (max-width:600px){ .btn, .btn.ghost{ flex:1 1 100% } }
+
+    footer{ margin:34px 0 20px; text-align:center; color:var(--muted); font-size:13px }
+
+    @media (max-width:640px){
+      .pair{ grid-template-columns:1fr; }
+      .pair::before{ display:none }
+      .k{ border-bottom:1px dashed var(--card-border) }
+      .v{ border-inline-start:none }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <h1>ورش بايثون والذكاء الاصطناعي</h1>
+      <p>المسار المتكامل لبناء مواقع الويب — حضوري أو عن بُعد</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <!-- Tabs -->
+    <div class="tabs" role="tablist" aria-label="نوع الورشة">
+      <button id="tab-in" role="tab" aria-pressed="true" aria-selected="true">👨‍🏫 حضوري – الرياض</button>
+      <button id="tab-remote" role="tab" aria-pressed="false" aria-selected="false">💻 عن بُعد</button>
+    </div>
+
+    <!-- حضوري -->
+    <section id="inperson" class="grid" aria-labelledby="tab-in">
+      <!-- نساء -->
+      <article class="card" aria-label="ورشة حضوري فترة النساء">
+        <h2 class="title">بايثون والذكاء الاصطناعي – المسار المتكامل لبناء مواقع الويب</h2>
+
+        <div class="pairs" role="list">
+          <div class="pair"><div class="k">النمط التدريبي</div><div class="v">حضوري – فترة النساء</div></div>
+          <div class="pair"><div class="k">المقر</div><div class="v">الرياض</div></div>
+          <div class="pair"><div class="k">المدرب</div><div class="v">سامي الزمزمي</div></div>
+          <div class="pair"><div class="k">المدة</div><div class="v">أسبوعين</div></div>
+          <div class="pair"><div class="k">الوقت</div><div class="v">1:00 – 5:00 عصرًا</div></div>
+          <div class="pair"><div class="k">المقاعد</div><div class="v">40</div></div>
+          <div class="pair is-date"><div class="k">الموعد</div><div class="v">تقام بتاريخ 27 من كل شهر ميلادي</div></div>
+          <div class="pair"><div class="k">السعر</div><div class="v">2800 ريال</div></div>
+        </div>
+
+        <div class="cta">
+          <a class="btn" target="_blank" rel="noopener" href="https://forms.gle/4rHnjkTr56xeUw8T7">انتقل للتسجيل</a>
+          <a class="btn ghost" target="_blank" rel="noopener" href="learn.html">ماذا ستتعلم؟</a>
+        </div>
+      </article>
+
+      <!-- رجال -->
+      <article class="card" aria-label="ورشة حضوري فترة الرجال">
+        <h2 class="title">بايثون والذكاء الاصطناعي – المسار المتكامل لبناء مواقع الويب</h2>
+
+        <div class="pairs" role="list">
+          <div class="pair"><div class="k">النمط التدريبي</div><div class="v">حضوري – فترة الرجال</div></div>
+          <div class="pair"><div class="k">المقر</div><div class="v">الرياض</div></div>
+          <div class="pair"><div class="k">المدرب</div><div class="v">سامي الزمزمي</div></div>
+          <div class="pair"><div class="k">المدة</div><div class="v">أسبوعين</div></div>
+          <div class="pair"><div class="k">الوقت</div><div class="v">5:00 – 10:00 مساءً</div></div>
+          <div class="pair"><div class="k">المقاعد</div><div class="v">40</div></div>
+          <div class="pair is-date"><div class="k">الموعد</div><div class="v">تقام بتاريخ 27 من كل شهر ميلادي</div></div>
+          <div class="pair"><div class="k">السعر</div><div class="v">2800 ريال</div></div>
+        </div>
+
+        <div class="cta">
+          <a class="btn" target="_blank" rel="noopener" href="https://forms.gle/4rHnjkTr56xeUw8T7">انتقل للتسجيل</a>
+          <a class="btn ghost" target="_blank" rel="noopener" href="learn.html">ماذا ستتعلم؟</a>
+        </div>
+      </article>
+    </section>
+
+    <!-- عن بُعد -->
+    <section id="remote" class="grid" aria-labelledby="tab-remote" hidden>
+      <article class="card" aria-label="ورشة عن بُعد">
+        <h2 class="title">بايثون والذكاء الاصطناعي – المسار المتكامل لبناء مواقع الويب</h2>
+
+        <div class="pairs" role="list">
+          <div class="pair"><div class="k">النمط التدريبي</div><div class="v">عن بُعد (Zoom)</div></div>
+          <div class="pair"><div class="k">المدرب</div><div class="v">سامي الزمزمي</div></div>
+          <div class="pair"><div class="k">المدة</div><div class="v">10 أيام</div></div>
+          <div class="pair"><div class="k">المقاعد</div><div class="v">10 فقط</div></div>
+          <div class="pair is-date"><div class="k">الموعد</div><div class="v">تقام بتاريخ 1 من كل شهر ميلادي</div></div>
+          <div class="pair"><div class="k">السعر</div><div class="v">2800 ريال</div></div>
+        </div>
+
+        <div class="cta">
+          <a class="btn" target="_blank" rel="noopener" href="https://forms.gle/75sAr9izMyqrb7VL8">انتقل للتسجيل</a>
+          <a class="btn ghost" target="_blank" rel="noopener" href="learn.html">ماذا ستتعلم؟</a>
+        </div>
+      </article>
+    </section>
+
+  </main>
+
+  <footer>© 2025 جميع الحقوق محفوظة | سامي الزمزمي</footer>
+
+  <script>
+    const tIn = document.getElementById('tab-in');
+    const tRm = document.getElementById('tab-remote');
+    const sIn = document.getElementById('inperson');
+    const sRm = document.getElementById('remote');
+
+    function toggle(inPerson){
+      const on = Boolean(inPerson);
+      tIn.setAttribute('aria-pressed', on);
+      tIn.setAttribute('aria-selected', on);
+      tRm.setAttribute('aria-pressed', !on);
+      tRm.setAttribute('aria-selected', !on);
+      sIn.hidden = !on; sRm.hidden = on ? true : false;
+      const active = on ? sIn : sRm;
+      active.style.animation = "fadeIn .4s ease forwards";
+      active.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+    tIn.addEventListener('click', ()=>toggle(true));
+    tRm.addEventListener('click', ()=>toggle(false));
+
+    [tIn, tRm].forEach(btn=>{
+      btn.addEventListener('keydown', (e)=>{
+        if(e.key === 'ArrowLeft' || e.key === 'ArrowRight'){
+          e.preventDefault(); (btn === tIn ? tRm : tIn).focus();
+        }
+        if(e.key === 'Enter' || e.key === ' '){
+          e.preventDefault(); btn.click();
+        }
+      });
+    });
+  </script>
+</body>
+</html>

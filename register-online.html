@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>التسجيل في الورشة عن بُعد | سامي الزمزمي</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --primary:#4361ee;
+      --secondary:#3a0ca3;
+      --success:#10b981;
+      --ink:#0f172a;
+      --card:rgba(255,255,255,0.9);
+      --radius:14px;
+      --shadow:0 6px 18px rgba(0,0,0,.25);
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:'Tajawal',sans-serif;
+      color:var(--ink);
+      line-height:1.6;
+      min-height:100vh;
+      padding:12px;
+      position:relative;
+    }
+
+    /* خلفية الفيديو */
+    .video-bg{position:fixed; inset:0; z-index:-2; overflow:hidden}
+    .video-bg video{width:100%; height:100%; object-fit:cover}
+    .video-bg::after{
+      content:""; position:absolute; inset:0;
+      background:linear-gradient(135deg, rgba(15,23,42,0.55), rgba(30,41,59,0.65));
+      z-index:1;
+    }
+
+    header{text-align:center; margin-bottom:16px; position:relative; z-index:2;}
+    header img{width:80px;height:80px;border-radius:50%;object-fit:cover; box-shadow:var(--shadow); margin-bottom:10px; border:3px solid #fff;}
+    header h1{font-size:1.35rem; font-weight:800; color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.5); margin-bottom:6px;}
+    header p{font-size:.9rem; color:#f1f5f9; text-shadow:0 1px 3px rgba(0,0,0,.6);}
+
+    .page-container{position:relative; z-index:2; display:flex; flex-direction:column; gap:16px; max-width:1200px; margin:0 auto;}
+
+    .form-card, .summary-card, .success-card{
+      background:var(--card);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:16px;
+      backdrop-filter:blur(10px);
+      -webkit-backdrop-filter:blur(10px);
+    }
+
+    .form-card h2{font-size:1rem; font-weight:700; color:var(--primary); margin-bottom:12px;}
+
+    .form-group{margin-bottom:12px}
+    label{display:block; font-size:.85rem; font-weight:600; margin-bottom:6px; color:#0f172a}
+    input, textarea{
+      width:100%; padding:9px; border-radius:10px;
+      border:1px solid #ddd; font-size:.85rem; font-family:inherit; background:#f9fafb;
+    }
+    input:focus, textarea:focus{
+      border-color:var(--primary); outline:none;
+      box-shadow:0 0 0 2px rgba(67,97,238,.15); background:#fff;
+    }
+
+    .choices-grid{display:flex; flex-direction:column; gap:6px}
+    .choice-card{
+      display:flex; align-items:center; gap:6px;
+      padding:8px; border:1px solid #ddd; border-radius:8px; cursor:pointer;
+      font-size:.85rem; background:#f9fafb; transition:.2s;
+    }
+    .choice-card:hover{border-color:var(--primary); background:#eef2ff}
+    .choice-card input{appearance:none; width:14px; height:14px; border:2px solid var(--primary); border-radius:50%; position:relative; cursor:pointer;}
+    .choice-card input:checked::before{content:""; position:absolute; width:8px; height:8px; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--primary); border-radius:50%;}
+
+    .submit-btn{
+      width:100%; padding:12px; border:none; border-radius:10px;
+      background:linear-gradient(135deg,var(--primary),var(--secondary));
+      color:#fff; font-size:.9rem; font-weight:700; cursor:pointer;
+      margin-top:8px; transition:.2s;
+    }
+    .submit-btn:hover{opacity:.92; transform:translateY(-1px)}
+
+    .summary-card{border-top:3px solid var(--success)}
+    .summary-card h3{font-size:.95rem; color:var(--success); margin-bottom:10px}
+    .summary-item{display:flex; justify-content:space-between; font-size:.8rem; padding:6px 0; border-bottom:1px solid #e5e7eb; color:#0f172a;}
+    .summary-item:last-child{border-bottom:none}
+
+    .success-card{
+      text-align:center;
+      margin:40px auto;
+      max-width:500px;
+      font-size:1rem;
+      color:#0f172a;
+    }
+    .success-card h2{color:var(--success); margin-bottom:10px}
+    .success-card p{color:#111;}
+  </style>
+</head>
+<body>
+  <!-- خلفية الفيديو -->
+  <div class="video-bg">
+    <video autoplay muted loop playsinline>
+      <source src="assets/Background.mp4" type="video/mp4">
+      متصفحك لا يدعم تشغيل الفيديو
+    </video>
+  </div>
+
+  <!-- الهيدر -->
+  <header>
+    <img src="logo.jpg" alt="شعار سامي الزمزمي">
+    <h1>التسجيل في الورشة عن بُعد</h1>
+    <p>برنامج تدريبي تفاعلي مع سامي الزمزمي</p>
+  </header>
+
+  <!-- المحتوى -->
+  <div class="page-container">
+    <!-- النموذج -->
+    <form class="form-card" id="registerForm">
+      <h2>📝 نموذج التسجيل</h2>
+
+      <div class="form-group">
+        <label>الاسم *</label>
+        <input type="text" name="name" required placeholder="اكتب اسمك الثلاثي">
+      </div>
+
+      <div class="form-group">
+        <label>الجوال *</label>
+        <input type="tel" name="phone" required placeholder="05XXXXXXXX" inputmode="tel">
+      </div>
+
+      <div class="form-group">
+        <label>العمر *</label>
+        <input type="number" name="age" min="15" required>
+      </div>
+
+      <div class="form-group">
+        <label>المؤهل العلمي *</label>
+        <input type="text" name="degree" required>
+      </div>
+
+      <div class="form-group">
+        <label>المدينة *</label>
+        <input type="text" name="city" required>
+      </div>
+
+      <div class="form-group">
+        <label>هل لديك خبرة تامة بالتعامل مع اللابتوب وأجهزة الكمبيوتر بصفه عامة؟ *</label>
+        <div class="choices-grid">
+          <label class="choice-card"><input type="radio" name="computer" value="نعم" required><span>نعم</span></label>
+          <label class="choice-card"><input type="radio" name="computer" value="لا"><span>لا</span></label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>ما مدى إجادتك لقراءة اللغة الإنجليزية؟ *</label>
+        <div class="choices-grid">
+          <label class="choice-card"><input type="radio" name="english" value="ممتازة" required><span>ممتازة</span></label>
+          <label class="choice-card"><input type="radio" name="english" value="متوسط"><span>متوسط</span></label>
+          <label class="choice-card"><input type="radio" name="english" value="ضعيف"><span>لا أستطيع قراءة أي كلمة</span></label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>هل لديك جهاز لابتوب بالمواصفات التالية: <br>الهاردسك SSD والمعالج لا يقل عن i5؟ *</label>
+        <div class="choices-grid">
+          <label class="choice-card"><input type="radio" name="laptop" value="نعم" required><span>نعم</span></label>
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn">📨 إرسال الطلب</button>
+    </form>
+
+    <!-- الرسالة بعد الإرسال (مخفية مبدئياً) -->
+    <div class="success-card" id="successMessage" style="display:none;">
+      <h2>✅ تم إرسال طلبك بنجاح</h2>
+      <p>سيتم التواصل معك قريبًا</p>
+    </div>
+
+    <!-- الملخص -->
+    <div class="summary-card">
+      <h3>📊 ملخص الورشة</h3>
+      <div class="summary-item"><span>المدة</span><b>10 أيام</b></div>
+      <div class="summary-item"><span>الوقت</span><b>5–8 مساءً</b></div>
+      <div class="summary-item"><span>السعر</span><b>1800 ريال</b></div>
+      <div class="summary-item"><span>المكان</span><b>عن بُعد (أونلاين)</b></div>
+      <div class="summary-item"><span>المقاعد</span><b>محدودة</b></div>
+      <div class="summary-item"><span>التواصل</span><b>0501424219</b></div>
+    </div>
+  </div>
+
+  <footer>
+    <p>© جميع الحقوق محفوظة - سامي الزمزمي</p>
+  </footer>
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBe7_IpqJhfgwxb1uKNMun4IRJLVDF18Qc",
+      authDomain: "sami-993c4.firebaseapp.com",
+      projectId: "sami-993c4",
+      storageBucket: "sami-993c4.appspot.com",  // ✅ تم إصلاحه
+      messagingSenderId: "1039087979161",
+      appId: "1:1039087979161:web:a7cc7244feba5ef5f90608",
+      measurementId: "G-CZP8ZX9BWP"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const form = document.getElementById("registerForm");
+    const successMessage = document.getElementById("successMessage");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(form).entries());
+      data.createdAt = new Date().toISOString();
+
+      try {
+        await addDoc(collection(db, "registrations"), data);
+        form.style.display = "none"; // إخفاء النموذج
+        successMessage.style.display = "block"; // إظهار رسالة النجاح
+      } catch (err) {
+        alert("❌ خطأ: " + err.message);
+      }
+    });
+  </script>
+</body>
+</html>

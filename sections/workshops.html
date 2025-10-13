@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ورش العمل التدريبية</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@emran-alhaddad/saudi-riyal-font/index.css">
+    <style>
+        :root {
+            --primary-blue: #004085;
+            --hover-blue: #002752;
+            --accent-wave: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1440 140" xmlns="http://www.w3.org/2000/svg"><path fill="%23004085" d="M0,70L48,63C96,56,192,42,288,42C384,42,480,56,576,56C672,56,768,42,864,35C960,28,1056,28,1152,35C1248,42,1344,56,1392,63L1440,70L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"/></svg>');
+        }
+
+        #workshops {
+            padding: 80px 0 60px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            font-family: 'Cairo', sans-serif;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #workshops::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 120px;
+            background: var(--accent-wave) no-repeat bottom/cover;
+        }
+
+        #workshops h2 {
+            font-size: 2.5rem;
+            margin: 2rem 0;
+            color: var(--primary-blue);
+            position: relative;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .section-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            transform: translateY(40px) scale(0.95);
+            opacity: 0;
+            position: relative;
+        }
+
+        .card.visible {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-blue) 0%, #007bff 100%);
+        }
+
+        .card img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-bottom: 2px solid rgba(0,0,0,0.08);
+        }
+
+.card-content {
+    padding: 25px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+.card button {
+    margin-top: auto;
+}
+
+.card-buttons {
+    margin-top: auto;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.card-buttons button,
+.card-buttons .register-btn {
+    flex: 1 1 calc(50% - 5px);
+    text-align: center;
+}
+
+        .card h3 {
+            font-size: 1.3rem;
+            color: var(--primary-blue);
+            margin-bottom: 15px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+.card h3::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 100%;  /* من 50px إلى 100% */
+    height: 2px;
+    background: var(--primary-blue);
+}
+
+        .card p {
+            font-size: 0.95rem;
+            color: #444;
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+
+        .card button {
+            padding: 12px 25px;
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: 0.5s;
+        }
+
+        .card button:hover {
+            background: var(--hover-blue);
+            transform: translateY(-2px);
+        }
+
+        .card button:hover::before {
+            left: 100%;
+        }
+
+        .card.disabled {
+            filter: grayscale(0.8);
+            opacity: 0.8;
+        }
+
+        .coming-soon {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, #007bff 100%);
+            color: white !important;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: inline-block;
+            margin-top: 15px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 10% auto;
+            padding: 30px 25px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            transform: scale(0.9);
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .modal.show .modal-content {
+            transform: scale(1);
+        }
+
+        .modal h3 {
+            font-size: 1.5rem;
+            color: var(--primary-blue);
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-blue);
+        }
+
+        .modal p {
+            font-size: 14px;
+            line-height: 1.7;
+            margin: 15px 0;
+        }
+
+        .close {
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            font-size: 24px;
+            color: #999;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close:hover {
+            color: var(--primary-blue);
+        }
+
+        .register-btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #1908ae 0%, #01172f 100%);
+            color: white;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: transform 0.3s;
+        }
+
+        .register-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(18,140,126,0.3);
+        }
+
+        
+@media (max-width: 768px) {
+  .section-content {
+    grid-template-columns: 1fr;
+    gap: 25px;
+    padding: 0 15px;
+  }
+
+  .card {
+    margin: 0 10px;
+  }
+
+  .card img {
+    height: auto !important;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    width: 100%;
+    display: block;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .card h3 {
+    font-size: 1.2rem;
+  }
+
+  .card p {
+    font-size: 0.95rem;
+  }
+
+  .card button,
+  .register-btn {
+    font-size: 0.9rem;
+    padding: 10px 15px;
+  }
+
+  #workshops h2 {
+    font-size: 2rem;
+  }
+
+  .modal-content {
+    margin: 20% auto;
+    padding: 20px;
+  }
+}
+    </style>
+</head>
+<body>
+
+<section id="workshops">
+    <h2>ورش العمل التدريبية</h2>
+    <div class="section-content">
+
+<div class="card">
+  <img src="p1.png" alt="ورشة كيبوردك بذكاء">
+  <div class="card-content">
+    <h3>دخلك من كيبوردك... بذكاء</h3>
+    <p>امتلك المهارةةةةةةة لبناء موقع كامل مع الذكاء الاصطناعي</p>
+
+    <!-- ✅ السعر داخل الكرت -->
+    <div class="card-pricing" style="text-align: center; margin: 12px 0; display: flex; justify-content: center; align-items: flex-end; gap: 10px;">
+      <span class="old-price" style="color: #d00; font-size: 0.85rem; text-decoration: line-through;">
+        3499
+      </span>
+      <span class="current-price" style="color: #004085; font-size: 1.15rem; font-weight: bold;">
+        2800 <span class="icon-saudi_riyal" style="font-size: 1.1em;"></span>
+      </span>
+    </div>
+
+    <div class="card-buttons">
+      <button onclick="openModal('modal1')">تفاصيل</button>
+      <a class="register-btn" target="_blank" href="https://docs.google.com/forms/d/e/1FAIpQLScKayP1EjH_pOIBPyxc3yfF4CfugHynB4eApu2d32IwIxVtHA/viewform?usp=header">سجل الآن</a>
+    </div>
+  </div>
+</div>
+
+        <div class="card disabled">
+            <img src="p2.png" alt="ورشة Django">
+            <div class="card-content">
+                <h3>  بناء التطبيقات وأهم مكتبات Django</h3>
+                <p>بناء تطبيقات ويب قوية باستخدام Python وDjango.</p>
+                <p>نستعرض أهم المكتبات مثل REST Framework وAuth.</p>
+                <div class="coming-soon">قريباً</div>
+            </div>
+        </div>
+
+        <div class="card disabled">
+            <img src="p3.png" alt="ورشة Flutter">
+            <div class="card-content">
+                <h3> تطوير تطبيقات جوال متكاملة</h3>
+                <p>صمّم تطبيقات جوال هجينة لأنظمة iOS وAndroid.</p>
+                <p>نتعرف على أهم الحزم والمكتبات الحديثة في Flutter.</p>
+                <div class="coming-soon">قريباً</div>
+            </div>
+        </div>
+
+        <div class="card disabled">
+            <img src="p4.png" alt="ورشة الخوادم">
+            <div class="card-content">
+                <h3>ورشة الخوادم وقواعد البيانات</h3>
+                <p>إعداد Linux + MySQL + NGINX لتجهيز بيئة عمل متكاملة.</p>
+                <p>خطوة بخطوة من التثبيت حتى التشغيل الفعلي للموقع.</p>
+                <div class="coming-soon">قريباً</div>
+            </div>
+        </div>
+
+        <div class="card disabled">
+            <img src="p5.png" alt="ورشة الحماية">
+            <div class="card-content">
+                <h3>ورشة الحماية ورفع المشاريع</h3>
+                <p>تعلم تأمين موقعك ضد الهجمات الشائعة بكفاءة.</p>
+                <p>نشرح خطوات رفع المشروع إلى السيرفر باحتراف.</p>
+                <div class="coming-soon">قريباً</div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<!-- المودال -->
+<div id="modal1" class="modal" onclick="closeModal(event)">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">✕</span>
+    <h3>دخلك من كيبوردك... بذكاء</h3>
+    <p>ورشة العمر التي تمكّن المتدرب من إنشاء موقع ويب احترافي من الصفر، بواجهة (Frontend)، وخلفية (Backend)، ورفعها للسيرفر باستخدام أدوات الذكاء الصناعي.</p>
+    <p>📍 <strong>الرياض :</strong>  تبدا 18 ذو الحجه لمدة اسبوعين من 5 عصرا حتى 10 مساء </p>
+    <p>📍 <strong>أبها :</strong> تبدا 20 محرم لمدة اسبوعين من 5 عصرا حتى 10 مساء </p>
+    
+    <!-- ✅ السعر باستخدام الرمز الجديد -->
+    <p>
+      <strong>السعر:</strong>
+      2800 <span class="icon-saudi_riyal" style="font-size: 1.05em;"></span>
+      <span style="text-decoration: line-through; color: #999;">
+        3499 <span class="icon-saudi_riyal" style="font-size: 1.05em;"></span>
+      </span>
+    </p>
+
+    <a class="register-btn" target="_blank" href="https://docs.google.com/forms/d/e/1FAIpQLScKayP1EjH_pOIBPyxc3yfF4CfugHynB4eApu2d32IwIxVtHA/viewform?usp=header">سجّل الآن</a>
+  </div>
+</div>
+
+<script>
+    function revealCards() {
+        document.querySelectorAll(".card").forEach(card => {
+            const rect = card.getBoundingClientRect();
+            if (rect.top < window.innerHeight - 100) {
+                card.classList.add("visible");
+            }
+        });
+    }
+
+    function openModal(modalId) {
+        const modal = document.getElementById(modalId);
+        modal.classList.add('show');
+        modal.style.display = 'block';
+    }
+
+    function closeModal(e) {
+        if (e.target.classList.contains('modal')) {
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.classList.remove('show');
+                modal.style.display = 'none';
+            });
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        revealCards();
+        window.addEventListener("scroll", revealCards);
+    });
+
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal')) {
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.classList.remove('show');
+                modal.style.display = 'none';
+            });
+        }
+    };
+</script>
+
+</body>
+
+</html>
