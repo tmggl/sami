@@ -1,251 +1,102 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>لوحة الإدمن | تسجيلات الورشة</title>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root{
-      --primary:#2563eb;
-      --accent:#f97316;
-      --bg:#f9fafb;
-      --text:#111827;
-      --muted:#6b7280;
-      --radius:14px;
-      --shadow:0 6px 18px rgba(0,0,0,.1);
-    }
-    body{
-      font-family:'Tajawal',sans-serif;
-      background:var(--bg);
-      color:var(--text);
-      min-height:100vh;
-      margin:0;
-      padding:16px;
-      display:flex;justify-content:center;align-items:flex-start;
-    }
-    .container{width:100%;max-width:1200px}
-    .card{
-      background:#fff;
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      padding:20px;
-      margin:20px auto;
-    }
-    h1{color:var(--primary);margin-bottom:10px;font-size:1.4rem}
-    .login-card{max-width:420px;text-align:center;margin-top:10%}
-    .login-card input{
-      width:100%;padding:12px;border:1px solid #ddd;border-radius:10px;
-      margin-bottom:12px;font-family:inherit
-    }
-    .btn{
-      cursor:pointer;border:none;border-radius:10px;
-      padding:12px;font-weight:700;font-size:.95rem;transition:.2s
-    }
-    .btn-primary{
-      background:linear-gradient(135deg,var(--primary),var(--accent));
-      color:#fff;width:100%
-    }
-    .btn-primary:hover{opacity:.9}
-    .btn-danger{background:#ef4444;color:#fff;padding:10px 16px;margin-bottom:16px}
-    .btn-toggle{
-      padding:10px 20px;margin:5px;
-      background:#fff;border:1px solid #ddd;
-      border-radius:10px;cursor:pointer;font-weight:600
-    }
-    .btn-toggle.active{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border:none}
-    .hidden{display:none}
-    table{width:100%;border-collapse:collapse;margin-top:20px;font-size:.85rem}
-    th,td{padding:10px;border:1px solid #eee;text-align:center}
-    th{background:var(--primary);color:#fff}
-    tr:nth-child(even){background:#f9fafb}
-    tr:hover{background:#f3f4f6}
-    a{color:var(--accent);font-weight:600;text-decoration:none}
-    a:hover{text-decoration:underline}
-    .filter-box{margin-top:10px;display:flex;gap:10px;flex-wrap:wrap}
-    .filter-box input{
-      flex:1;min-width:200px;padding:10px;border:1px solid #ddd;border-radius:8px
-    }
-    .toggle-box{text-align:center;margin-bottom:15px}
-    @media(max-width:768px){
-      th,td{padding:8px;font-size:.78rem}
-      h1{font-size:1.1rem}
-    }
-  </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1830">
+  <title>لوحة إدارة النماذج | سامي الزمزمي</title>
+  <link rel="stylesheet" href="assets/forms.css?v=20260827-white-blue-2">
+  <link rel="stylesheet" href="assets/admin.css?v=20260827-white-blue-2">
 </head>
 <body>
-  <div class="container">
-
-    <!-- تسجيل الدخول -->
-    <div class="card login-card" id="loginCard">
-      <h2>🔒 دخول لوحة الإدمن</h2>
-      <input type="email" id="emailInput" placeholder="البريد الإلكتروني" required>
-      <input type="password" id="passwordInput" placeholder="كلمة المرور" required>
-      <button id="loginBtn" class="btn btn-primary">تسجيل الدخول</button>
+  <section class="login-screen" id="loginScreen">
+    <div class="login-panel">
+      <a class="brand login-brand" href="index.html"><img src="assets/brand-logo.png?v=20260827-blue-1" alt="شعار سامي الزمزمي"><span>سامي الزمزمي<small>إدارة البرامج التدريبية</small></span></a>
+      <div class="login-copy"><span class="login-badge">مساحة خاصة</span><h1>كل طلبات المتدربين في مكان واحد</h1><p>أدر النماذج، تابع الردود، وأرسل رسائل واتساب الجاهزة بسهولة.</p></div>
+      <form id="loginForm">
+        <label class="admin-label" for="phoneInput">رقم الجوال</label><input class="field" type="tel" id="phoneInput" inputmode="tel" autocomplete="username" placeholder="05XXXXXXXX" required>
+        <label class="admin-label" for="passwordInput">كلمة المرور</label><input class="field" type="password" id="passwordInput" autocomplete="current-password" required>
+        <button class="primary-btn login-btn" id="loginButton" type="submit">دخول لوحة الإدارة</button><p class="login-error" id="loginError" role="alert"></p>
+      </form>
     </div>
+    <div class="login-visual" aria-hidden="true"><div class="visual-content"><span>لوحة النماذج</span><strong>من التسجيل<br>إلى التواصل.</strong><div class="mini-stat"><b>واتساب مباشر</b><small>قوالب جاهزة لكل متدرب</small></div></div></div>
+  </section>
 
-    <!-- لوحة البيانات -->
-    <div class="card hidden" id="adminPanel">
-      <h1>لوحة الإدمن — تسجيلات الورشة</h1>
-      <button id="logoutBtn" class="btn btn-danger">تسجيل الخروج</button>
+  <div class="admin-app hidden" id="adminApp">
+    <aside class="admin-sidebar" id="adminSidebar">
+      <a class="brand sidebar-brand" href="index.html"><img src="assets/brand-logo.png?v=20260827-blue-1" alt="الشعار"><span>لوحة النماذج<small>سامي الزمزمي</small></span></a>
+      <nav class="admin-nav" aria-label="أقسام لوحة الإدارة">
+        <button class="nav-item active" data-view="overview"><span>⌂</span>نظرة عامة</button>
+        <button class="nav-item" data-view="forms"><span>▤</span>النماذج</button>
+        <button class="nav-item" data-view="responses"><span>◎</span>الردود <b class="nav-count" id="navResponseCount">0</b></button>
+        <button class="nav-item" data-view="messages"><span>✦</span>رسائل واتساب</button>
+      </nav>
+      <div class="sidebar-footer"><a href="form.html?form=in-person" target="_blank">فتح نموذج التسجيل ↗</a><button id="logoutButton">تسجيل الخروج</button></div>
+    </aside>
 
-      <!-- كروت الفلترة -->
-      <div class="toggle-box">
-        <button class="btn-toggle active" id="showAll">📋 الكل</button>
-        <button class="btn-toggle" id="showOnline">💻 عن بُعد</button>
-        <button class="btn-toggle" id="showOnsite">🏫 حضوري</button>
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <button class="menu-button" id="menuButton" aria-label="فتح القائمة">☰</button>
+        <div><p id="todayLabel"></p><h1 id="pageTitle">نظرة عامة</h1></div>
+        <div class="top-actions"><a class="ghost-btn" href="form.html?form=in-person" target="_blank">معاينة النموذج ↗</a><button class="primary-btn" data-go="forms">+ نموذج جديد</button></div>
+      </header>
+
+      <div class="admin-content">
+        <section class="admin-view" id="view-overview">
+          <div class="metrics" id="metrics"></div>
+          <div class="dashboard-grid">
+            <article class="admin-card chart-card"><div class="card-title"><div><h2>الطلبات حسب النموذج</h2><p>توزيع جميع الردود المسجلة</p></div></div><div id="formsChart" class="bars-chart"></div></article>
+            <article class="admin-card chart-card"><div class="card-title"><div><h2>حالة المتابعة</h2><p>أين وصلت المحادثات؟</p></div></div><div id="statusChart" class="bars-chart"></div></article>
+          </div>
+          <article class="admin-card recent-card"><div class="card-title"><div><h2>أحدث الطلبات</h2><p>آخر المتدربين الذين أرسلوا النموذج</p></div><button class="text-button" data-go="responses">عرض الكل ←</button></div><div class="table-wrap"><table><thead><tr><th>المتدرب</th><th>النموذج</th><th>المدينة</th><th>الحالة</th><th>التاريخ</th><th></th></tr></thead><tbody id="recentRows"></tbody></table></div></article>
+        </section>
+
+        <section class="admin-view hidden" id="view-forms">
+          <div class="section-heading"><div><h2>النماذج</h2><p>أنشئ الحقول وعدّل ترتيبها وانشرها مباشرة.</p></div><button class="primary-btn" id="addFormButton">+ إنشاء نموذج</button></div>
+          <div class="forms-workspace"><aside class="admin-card forms-list" id="formsList"></aside><section class="admin-card form-editor" id="formEditor"></section></div>
+        </section>
+
+        <section class="admin-view hidden" id="view-responses">
+          <div class="section-heading"><div><h2>ردود المتدربين</h2><p>تابع الدعوات وأرسل رسالة واتساب جاهزة.</p></div><button class="ghost-btn" id="exportButton">تصدير CSV</button></div>
+          <div class="admin-card responses-card">
+            <div class="filters"><input class="field" id="responseSearch" type="search" placeholder="ابحث بالاسم أو الجوال أو المدينة…"><select class="field" id="formFilter"><option value="all">كل النماذج</option></select><select class="field" id="statusFilter"><option value="all">كل الحالات</option><option value="new">جديد</option><option value="contacted">تمت الدعوة</option><option value="accepted">مقبول سابقًا</option><option value="declined">مرفوض</option></select></div>
+            <div class="table-wrap responses-wrap"><table class="responses-table"><thead><tr><th>المتدرب</th><th>الجوال</th><th>النموذج</th><th>المدينة</th><th>الحالة</th><th>التاريخ</th><th>الإجراء</th></tr></thead><tbody id="responseRows"></tbody></table></div><div class="empty-state hidden" id="responsesEmpty">لا توجد نتائج مطابقة.</div>
+          </div>
+        </section>
+
+        <section class="admin-view hidden" id="view-messages">
+          <div class="section-heading"><div><h2>رسائل واتساب الجاهزة</h2><p>استخدم <code>{name}</code> و<code>{form}</code> و<code>{city}</code> لإدخال بيانات المتدرب تلقائيًا.</p></div><button class="primary-btn" id="addMessageButton">+ رسالة جديدة</button></div>
+          <div id="messagesList" class="messages-grid"></div><div class="sticky-save"><span id="messageSaveStatus"></span><button class="primary-btn" id="saveMessagesButton">حفظ الرسائل</button></div>
+        </section>
       </div>
-
-      <!-- مربع البحث -->
-      <div class="filter-box">
-        <input type="text" id="searchInput" placeholder="🔍 ابحث بالاسم أو المدينة أو الجوال">
-      </div>
-
-      <!-- الجدول -->
-      <div id="rows">جارٍ التحميل…</div>
-    </div>
-
+    </main>
   </div>
 
-  <!-- Firebase -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
-    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBe7_IpqJhfgwxb1uKNMun4IRJLVDF18Qc",
-      authDomain: "sami-993c4.firebaseapp.com",
-      projectId: "sami-993c4",
-      storageBucket: "sami-993c4.appspot.com",
-      messagingSenderId: "1039087979161",
-      appId: "1:1039087979161:web:a7cc7244feba5ef5f90608"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    const loginCard = document.getElementById('loginCard');
-    const adminPanel = document.getElementById('adminPanel');
-    const loginBtn = document.getElementById('loginBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const emailInput = document.getElementById('emailInput');
-    const passwordInput = document.getElementById('passwordInput');
-    const searchInput = document.getElementById('searchInput');
-    const rowsDiv = document.getElementById('rows');
-    const showAll = document.getElementById('showAll');
-    const showOnline = document.getElementById('showOnline');
-    const showOnsite = document.getElementById('showOnsite');
-
-    let registrations = [];
-    let currentFilter = "all";
-
-    // تسجيل الدخول
-    loginBtn.onclick = async () => {
-      const email = emailInput.value.trim();
-      const password = passwordInput.value.trim();
-      if(!email || !password){ alert("⚠️ أدخل البريد وكلمة المرور"); return; }
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-        loginCard.classList.add("hidden");
-        adminPanel.classList.remove("hidden");
-        loadData();
-      } catch (err) { alert("❌ خطأ: " + err.message); }
-    };
-
-    // تسجيل الخروج
-    logoutBtn.onclick = async () => {
-      await signOut(auth);
-      adminPanel.classList.add("hidden");
-      loginCard.classList.remove("hidden");
-    };
-
-    // تحميل البيانات
-    async function loadData(){
-      try {
-        const snapshot = await getDocs(collection(db, "registrations"));
-        registrations = [];
-        snapshot.forEach(doc=>registrations.push(doc.data()));
-        renderTable(registrations);
-      } catch (err) {
-        rowsDiv.innerHTML = "❌ فشل تحميل البيانات: " + err.message;
-      }
-    }
-
-    // عرض الجدول
-    function renderTable(data){
-      let html = `<table><tr>
-        <th>الفترة</th>
-        <th>الاسم</th>
-        <th>الجوال</th>
-        <th>العمر</th>
-        <th>المؤهل</th>
-        <th>المدينة</th>
-        <th>الكمبيوتر</th>
-        <th>الإنجليزية</th>
-        <th>اللابتوب</th>
-        <th>الحضور بالرياض</th>
-        <th>الحالة</th>
-        <th>تاريخ التسجيل</th>
-      </tr>`;
-      data.forEach(d=>{
-        html += `<tr>
-          <td>${d.time||''}</td>
-          <td>${d.name||''}</td>
-          <td><a href="https://wa.me/${(d.phone||'').replace(/^0/,'966')}" target="_blank">${d.phone||''}</a></td>
-          <td>${d.age||''}</td>
-          <td>${d.degree||''}</td>
-          <td>${d.city||''}</td>
-          <td>${d.computer||''}</td>
-          <td>${d.english||''}</td>
-          <td>${d.laptop||''}</td>
-          <td>${d.riyadh||''}</td>
-          <td>${d.status || 'جديد'}</td>
-          <td>${d.createdAt||''}</td>
-        </tr>`;
-      });
-      html += `</table>`;
-      rowsDiv.innerHTML = html;
-    }
-
-    // فلترة حسب البحث
-    searchInput.oninput = () => applyFilters();
-
-    // أزرار الفلترة
-    showAll.onclick = () => { setActive(showAll); currentFilter = "all"; applyFilters(); }
-    showOnline.onclick = () => { setActive(showOnline); currentFilter = "online"; applyFilters(); }
-    showOnsite.onclick = () => { setActive(showOnsite); currentFilter = "onsite"; applyFilters(); }
-
-    function setActive(btn){
-      [showAll, showOnline, showOnsite].forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-    }
-
-    function applyFilters(){
-      const q = searchInput.value.toLowerCase();
-      let filtered = registrations.filter(r =>
-        (r.name||'').toLowerCase().includes(q) ||
-        (r.city||'').toLowerCase().includes(q) ||
-        (r.phone||'').toLowerCase().includes(q)
-      );
-
-      if(currentFilter === "online"){
-        filtered = filtered.filter(r => (r.riyadh||'').toLowerCase() !== "نعم");
-      } else if(currentFilter === "onsite"){
-        filtered = filtered.filter(r => (r.riyadh||'').toLowerCase() === "نعم");
-      }
-
-      renderTable(filtered);
-    }
-
-    // مراقبة حالة الدخول
-    onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        adminPanel.classList.add("hidden");
-        loginCard.classList.remove("hidden");
-      }
-    });
-  </script>
+  <div class="modal-backdrop hidden" id="whatsappModal" role="dialog" aria-modal="true" aria-labelledby="whatsappTitle">
+    <div class="modal-panel whatsapp-panel">
+      <button class="modal-close" data-close-modal aria-label="إغلاق">×</button>
+      <span class="modal-kicker">إرسال عبر واتساب</span>
+      <h2 id="whatsappTitle">اختر رسالة جاهزة</h2>
+      <p class="modal-subtitle" id="whatsappRecipient"></p>
+      <div class="template-options" id="templateOptions"></div>
+      <label class="admin-label" for="messagePreview">معاينة الرسالة</label>
+      <textarea class="field message-preview" id="messagePreview"></textarea>
+      <div class="qr-panel hidden" id="whatsappQrPanel">
+        <img id="whatsappQrImage" alt="باركود فتح المحادثة في واتساب">
+        <div><b>افتح المحادثة من الجوال</b><small>امسح الباركود بكاميرا الجوال، وستظهر الرسالة جاهزة للإرسال.</small></div>
+      </div>
+      <div class="modal-actions whatsapp-actions">
+        <button class="ghost-btn" data-close-modal>إلغاء</button>
+        <button class="qr-button" id="showWhatsappQrButton">باركود للجوال</button>
+        <button class="wa-send" id="sendWhatsappButton">إرسال من هذا الجهاز ↗</button>
+      </div>
+      <p class="manual-status-note">بعد التأكد من الإرسال اضغط «تمت الدعوة» من بطاقة المتدرب.</p>
+    </div>
+  </div>
+  <div class="modal-backdrop hidden" id="detailsModal" role="dialog" aria-modal="true" aria-labelledby="detailsTitle">
+    <div class="modal-panel details-panel"><button class="modal-close" data-close-details aria-label="إغلاق">×</button><span class="modal-kicker">تفاصيل الرد</span><h2 id="detailsTitle">بيانات المتدرب</h2><div id="responseDetails" class="response-details"></div></div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script type="module" src="assets/admin.js?v=20260827-junior-schedule-1"></script>
 </body>
 </html>

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>ورش بايثون والذكاء الاصطناعي | سامي الزمزمي</title>
-  <meta name="color-scheme" content="dark"> <!-- داكن دائمًا -->
+  <meta name="color-scheme" content="light">
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <style>
     :root{
@@ -160,6 +160,25 @@
       .k{ border-bottom:1px dashed var(--card-border) }
       .v{ border-inline-start:none }
     }
+
+    /* الهوية البيضاء والزرقاء الموحدة */
+    :root{--bg:#fff;--ink:#15355f;--muted:#58708f;--brand:#1f63b5;--brand-d:#15477f;--accent:#1f63b5;--card:#fff;--card-border:#b8cef0;--shadow:0 16px 34px rgba(24,74,140,.12),0 3px 8px rgba(24,74,140,.08);--pair-bg:#fff;--val-bg:#edf5ff;--val-ink:#15355f;--val-border:#b8cef0}
+    body{background:#fff;color:var(--ink)}
+    header{padding:28px 18px 30px;border-bottom:1px solid #dce8f7}
+    .tabs{background:#fff;border:1.5px solid var(--card-border);box-shadow:var(--shadow);backdrop-filter:none}
+    .tabs button{color:var(--ink)}
+    .tabs button[aria-pressed="true"]{color:#fff;background:var(--brand);border-color:var(--brand);box-shadow:0 8px 18px rgba(31,99,181,.2)}
+    .card{background:#fff;border:1.5px solid var(--card-border);box-shadow:var(--shadow);backdrop-filter:none}
+    .card:hover{border-color:#6e9bd3;box-shadow:0 23px 44px rgba(24,74,140,.17),0 6px 12px rgba(24,74,140,.1)}
+    .title{color:var(--brand-d)}
+    .pair{background:#fff;border-color:var(--card-border)}
+    .k{color:#385777}
+    .v{background:var(--val-bg);color:var(--val-ink);border-color:var(--val-border)}
+    .pair.is-date .v{background:#eaf7f2;color:#087652;border-color:#a9dfca}
+    .btn.ghost{color:var(--brand-d);border-color:var(--card-border);background:#fff}
+    .btn.ghost:hover{background:#edf5ff}
+    .price-value{direction:ltr;display:flex;align-items:center;gap:7px;justify-content:flex-start}
+    .price-value img{width:auto;height:14px}
   </style>
 </head>
 <body>
@@ -193,11 +212,11 @@
           <div class="pair"><div class="k">الوقت</div><div class="v">1:00 – 5:00 عصرًا</div></div>
           <div class="pair"><div class="k">المقاعد</div><div class="v">40</div></div>
           <div class="pair is-date"><div class="k">الموعد</div><div class="v">تقام بتاريخ 27 من كل شهر ميلادي</div></div>
-          <div class="pair"><div class="k">السعر</div><div class="v">2800 ريال</div></div>
+          <div class="pair"><div class="k">السعر</div><div class="v price-value"><img src="assets/saudi-riyal-symbol.svg" alt="ريال سعودي"><span>2800</span></div></div>
         </div>
 
         <div class="cta">
-          <a class="btn" target="_blank" rel="noopener" href="https://forms.gle/4rHnjkTr56xeUw8T7">انتقل للتسجيل</a>
+          <a class="btn" href="form.html?form=in-person">انتقل للتسجيل</a>
           <a class="btn ghost" target="_blank" rel="noopener" href="learn.html">ماذا ستتعلم؟</a>
         </div>
       </article>
@@ -214,11 +233,11 @@
           <div class="pair"><div class="k">الوقت</div><div class="v">5:00 – 10:00 مساءً</div></div>
           <div class="pair"><div class="k">المقاعد</div><div class="v">40</div></div>
           <div class="pair is-date"><div class="k">الموعد</div><div class="v">تقام بتاريخ 27 من كل شهر ميلادي</div></div>
-          <div class="pair"><div class="k">السعر</div><div class="v">2800 ريال</div></div>
+          <div class="pair"><div class="k">السعر</div><div class="v price-value"><img src="assets/saudi-riyal-symbol.svg" alt="ريال سعودي"><span>2800</span></div></div>
         </div>
 
         <div class="cta">
-          <a class="btn" target="_blank" rel="noopener" href="https://forms.gle/4rHnjkTr56xeUw8T7">انتقل للتسجيل</a>
+          <a class="btn" href="form.html?form=in-person">انتقل للتسجيل</a>
           <a class="btn ghost" target="_blank" rel="noopener" href="learn.html">ماذا ستتعلم؟</a>
         </div>
       </article>
@@ -233,13 +252,14 @@
           <div class="pair"><div class="k">النمط التدريبي</div><div class="v">عن بُعد (Zoom)</div></div>
           <div class="pair"><div class="k">المدرب</div><div class="v">سامي الزمزمي</div></div>
           <div class="pair"><div class="k">المدة</div><div class="v">10 أيام</div></div>
+          <div class="pair"><div class="k">الوقت</div><div class="v">من 5 م حتى 10 م</div></div>
           <div class="pair"><div class="k">المقاعد</div><div class="v">10 فقط</div></div>
           <div class="pair is-date"><div class="k">الموعد</div><div class="v">تقام بتاريخ 1 من كل شهر ميلادي</div></div>
-          <div class="pair"><div class="k">السعر</div><div class="v">2800 ريال</div></div>
+          <div class="pair"><div class="k">السعر</div><div class="v price-value"><img src="assets/saudi-riyal-symbol.svg" alt="ريال سعودي"><span>2200</span></div></div>
         </div>
 
         <div class="cta">
-          <a class="btn" target="_blank" rel="noopener" href="https://forms.gle/75sAr9izMyqrb7VL8">انتقل للتسجيل</a>
+          <a class="btn" href="form.html?form=remote">انتقل للتسجيل</a>
           <a class="btn ghost" target="_blank" rel="noopener" href="learn.html">ماذا ستتعلم؟</a>
         </div>
       </article>

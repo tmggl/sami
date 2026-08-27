@@ -1,0 +1,35 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == '966501424219@admin.sami.local';
+    }
+
+    match /forms/{formId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /registrations/{registrationId} {
+      allow create: if request.resource.data.keys().hasAll([
+          'formId', 'formTitle', 'answers', 'status', 'source', 'createdAtISO'
+        ])
+        && request.resource.data.status == 'new'
+        && request.resource.data.source == 'website'
+        && request.resource.data.formId is string
+        && request.resource.data.formTitle is string
+        && request.resource.data.answers is map;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /settings/{settingId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

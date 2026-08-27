@@ -1,442 +1,258 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>البرنامج التدريبي | سامي الزمزمي</title>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>تفاصيل الحقيبة التدريبية | سامي الزمزمي</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #4361ee;
-      --primary-dark: #3a0ca3;
-      --secondary: #f72585;
-      --accent: #4cc9f0;
-      --light: #f8f9fa;
-      --dark: #0b0b0b;           /* أغمق ليتماشى مع الخلفية السوداء */
-      --dark-light: #151922;
-      --text: #e2e8f0;
-      --text-muted: #a0aec0;
-      --card-bg: rgba(26, 32, 44, 0.78);
-      --card-border: rgba(74, 85, 104, 0.28);
-      --gradient: linear-gradient(135deg, var(--primary), var(--primary-dark));
-      --gradient-secondary: linear-gradient(135deg, var(--secondary), #b5179e);
-      --radius: 16px;
-      --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
-      --transition: all 0.3s ease;
+      color-scheme: light;
+      --page: #ffffff;
+      --surface-open: #ffffff;
+      --line: #b8cef0;
+      --line-active: #2563b8;
+      --text: #15355f;
+      --muted: #476487;
+      --accent: #1e5da9;
+      --accent-soft: #edf5ff;
+      --blue: #174f96;
+      --radius: 19px;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-    html, body { height: 100%; }
-
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
     body {
-      font-family: 'Tajawal', sans-serif;
-      background: #000;                /* خلفية سوداء ثابتة */
-      color: var(--text);
-      line-height: 1.6;
-      padding: 0;
       margin: 0;
-      display: flex;
-      flex-direction: column;
       min-height: 100vh;
       overflow-x: hidden;
+      font-family: "Cairo", sans-serif;
+      color: var(--text);
+      background: var(--page);
     }
 
-    /* ===== خلفية النجوم (بدل الفيديو) ===== */
-    #stars-canvas{
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      background: #000;
-      z-index: -2;
-      display: block;
-    }
-
-    /* App Bar */
-    .appbar {
+    .topbar {
       position: sticky;
       top: 0;
-      z-index: 100;
+      z-index: 20;
+      border-bottom: 1px solid #d8e5f5;
+      background: rgba(255, 255, 255, .96);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .topbar-inner {
+      width: min(820px, calc(100% - 32px));
+      min-height: 66px;
+      margin: auto;
+      display: grid;
+      grid-template-columns: 42px 1fr 42px;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .back {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border: 1.5px solid var(--line);
+      border-radius: 13px;
+      color: var(--text);
+      background: #ffffff;
+      text-decoration: none;
+      transition: .2s ease;
+    }
+
+    .back:hover { border-color: var(--line-active); background: var(--accent-soft); transform: translateX(2px); }
+    .back svg { width: 20px; height: 20px; }
+
+    h1 {
+      margin: 0;
+      text-align: center;
+      font-size: clamp(1.08rem, 3.7vw, 1.38rem);
+      font-weight: 800;
+      letter-spacing: -.02em;
+    }
+
+    main {
+      width: min(820px, calc(100% - 32px));
+      margin: 24px auto 58px;
+    }
+
+    .accordion-list { display: grid; gap: 12px; }
+
+    details {
+      overflow: clip;
+      border: 1.5px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+      box-shadow: 0 16px 34px rgba(24, 74, 140, .12), 0 3px 8px rgba(24, 74, 140, .08);
+      transition: border-color .22s ease, background .22s ease, transform .22s ease;
+    }
+
+    details:hover { transform: translateY(-1px); border-color: #6e9bd3; }
+    details[open] { border-color: var(--line-active); background: var(--surface-open); box-shadow: 0 20px 38px rgba(24, 74, 140, .16), 0 5px 10px rgba(24, 74, 140, .08); }
+
+    summary {
+      min-height: 68px;
+      padding: 16px 18px;
       display: flex;
       align-items: center;
-      gap: 15px;
-      padding: 15px 20px;
-      background: rgba(13, 17, 23, 0.9);
-      border-bottom: 1px solid var(--card-border);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      gap: 13px;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+      font-size: 1rem;
+      font-weight: 700;
+      outline: none;
     }
 
-    .back-btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      background: var(--gradient); color: white; padding: 10px 20px;
-      border-radius: 50px; font-weight: 600; font-size: 15px; cursor: pointer;
-      box-shadow: var(--shadow); transition: var(--transition); border: none; text-decoration: none;
-    }
-    .back-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(67,97,238,0.4); }
+    summary::-webkit-details-marker { display: none; }
+    summary:focus-visible { box-shadow: inset 0 0 0 3px rgba(37, 99, 184, .25); }
 
-    .title {
-      margin: 0; font-weight: 800; font-size: 22px; text-align: center; flex: 1; color: var(--text);
-      background: linear-gradient(45deg, var(--primary), var(--accent));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-
-    /* Container */
-    .container { max-width: 1000px; width: 100%; margin: 30px auto; padding: 0 20px; flex: 1; position:relative; z-index:2; }
-
-    /* Intro */
-    .intro {
-      margin-bottom: 30px; padding: 25px; border-radius: var(--radius);
-      background: var(--card-bg); border: 1px solid var(--card-border);
-      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-      color: var(--text-muted); font-size: 17px; line-height: 1.8; text-align: center; box-shadow: var(--shadow);
+    .section-icon {
+      width: 36px;
+      height: 36px;
+      flex: 0 0 36px;
+      display: grid;
+      place-items: center;
+      border: 1px solid #b8d0f1;
+      border-radius: 11px;
+      color: var(--accent);
+      background: var(--accent-soft);
     }
 
-    /* Accordion */
-    .accordion {
-      margin-bottom: 20px; border-radius: var(--radius); background: var(--card-bg);
-      box-shadow: var(--shadow); overflow: hidden; border: 1px solid var(--card-border); transition: var(--transition);
-    }
-    .accordion:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(0,0,0,0.35); }
+    .section-icon svg { width: 18px; height: 18px; }
+    .section-title { flex: 1; }
 
-    .accordion-header {
-      width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 15px;
-      padding: 20px 25px;
-      background: linear-gradient(135deg, rgba(67,97,238,0.12), rgba(58,12,163,0.18));
-      color: var(--text); border: none; cursor: pointer; font-weight: 700; font-size: 18px; transition: var(--transition);
-    }
-    .accordion-header:hover { background: linear-gradient(135deg, rgba(67,97,238,0.18), rgba(58,12,163,0.24)); }
-
-    .icon { transition: transform 0.3s ease; flex-shrink: 0; font-size: 16px; color: var(--accent); }
-    .accordion.open .icon { transform: rotate(180deg); }
-
-    .accordion-content {
-      overflow: hidden; max-height: 0; transition: max-height 0.4s ease, padding 0.3s ease; padding: 0 25px;
-    }
-    .accordion.open .accordion-content { padding: 25px; max-height: 5000px; }
-
-    .accordion-content p, .accordion-content ul, .accordion-content ol, .accordion-content div {
-      margin: 0 0 18px 0; color: var(--text); font-size: 16px; line-height: 1.9;
-    }
-    .accordion-content .mono { white-space: pre-line; font-family: 'Tajawal', sans-serif; }
-
-    .list { margin: 15px 0 0 0; padding: 0 0 0 25px; }
-    .list li { margin: 15px 0; position: relative; padding-left: 5px; }
-    .list li::marker { color: var(--primary); font-weight: bold; }
-
-    .badge {
-      display: inline-block; margin-inline-start: 10px; padding: 5px 12px; border-radius: 50px;
-      font-size: 13px; font-weight: 700; color: white; background: var(--gradient-secondary);
-      box-shadow: 0 4px 12px rgba(247, 37, 133, 0.3);
+    .count {
+      margin-inline-start: 7px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      color: var(--blue);
+      background: #edf5ff;
+      font-size: .72rem;
+      font-weight: 700;
+      white-space: nowrap;
     }
 
-    /* Footer */
-    .footer {
-      text-align: center; padding: 40px 0; margin-top: 50px;
-      background: rgba(13, 17, 23, 0.9); border-top: 1px solid var(--card-border);
-      position:relative; z-index:2;
-    }
-    .footer p { color: var(--text-muted); font-size: 15px; }
-
-    /* Responsive Design */
-    @media (max-width: 768px) {
-      .appbar { padding: 12px 15px; }
-      .title { font-size: 19px; }
-      .container { padding: 0 15px; }
-      .intro { padding: 20px; font-size: 16px; }
-      .accordion-header { padding: 18px 20px; font-size: 17px; }
-      .accordion-content, .accordion-content p, .accordion-content ul, .accordion-content ol, .accordion-content div { font-size: 15px; }
-      .accordion-content { padding: 0 20px; }
-      .accordion.open .accordion-content { padding: 20px; }
-      .list { padding: 0 0 0 20px; }
-      .list li { margin: 12px 0; }
+    .chevron {
+      width: 30px;
+      height: 30px;
+      flex: 0 0 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 9px;
+      color: var(--muted);
+      background: #f0f6ff;
+      transition: transform .24s ease, color .24s ease, background .24s ease;
     }
 
-    @media (max-width: 480px) {
-      .appbar { padding: 10px 12px; }
-      .back-btn { padding: 8px 16px; font-size: 14px; }
-      .title { font-size: 17px; }
-      .intro { padding: 18px; font-size: 15px; }
-      .accordion-header { padding: 16px 18px; font-size: 16px; }
-      .accordion-content { padding: 0 18px; }
-      .accordion.open .accordion-content { padding: 18px; }
-      .badge { font-size: 12px; padding: 4px 10px; }
+    .chevron svg { width: 16px; height: 16px; }
+    details[open] .chevron { transform: rotate(180deg); color: var(--accent); background: var(--accent-soft); }
+
+    .content {
+      margin: 0 18px;
+      padding: 0 49px 21px 0;
+      border-top: 1px solid #dce8f7;
+      color: var(--muted);
+      font-size: .94rem;
+      line-height: 2;
     }
 
-    /* ===== تحسين الهوامش (مثل الإصلاح السابق) ===== */
-    @media (max-width: 768px){ .accordion{ margin-bottom: 14px; } }
-    .accordion.open .accordion-content{ padding-bottom: 24px; }
-    @media (max-width: 768px){ .accordion.open .accordion-content{ padding-bottom: 22px; } }
-    .accordion.open .accordion-content::after{ content:""; display:block; height: 8px; }
-    @media (max-width: 480px){ .accordion.open .accordion-content::after{ height: 10px; } }
-    .accordion-content > :last-child{ margin-bottom: 0; }
+    .content > *:first-child { margin-top: 17px; }
+    .content > *:last-child { margin-bottom: 0; }
+    .content p { margin: 0; white-space: pre-line; }
+    .content ol, .content ul { margin: 15px 0 0; padding: 0 22px 0 0; }
+    .content li { padding-right: 5px; margin-bottom: 8px; }
+    .content li::marker { color: var(--accent); font-weight: 700; }
+
+    @media (max-width: 600px) {
+      .topbar-inner, main { width: min(100% - 24px, 820px); }
+      .topbar-inner { min-height: 60px; grid-template-columns: 39px 1fr 39px; }
+      .back { width: 39px; height: 39px; border-radius: 12px; }
+      main { margin-top: 15px; }
+      .accordion-list { gap: 9px; }
+      details { border-radius: 16px; }
+      summary { min-height: 61px; padding: 13px; gap: 10px; font-size: .91rem; }
+      .section-icon { width: 34px; height: 34px; flex-basis: 34px; border-radius: 10px; }
+      .content { margin: 0 13px; padding: 0 3px 18px; font-size: .88rem; line-height: 1.95; }
+      .count { display: inline-block; margin-top: 4px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition: none !important; }
+    }
   </style>
 </head>
 <body>
-
-  <!-- خلفية النجوم -->
-  <canvas id="stars-canvas" aria-hidden="true"></canvas>
-
-  <header class="appbar">
-    <button class="back-btn" onclick="goBack()" aria-label="عودة">
-      <i class="fas fa-arrow-right"></i>
-      عودة
-    </button>
-    <h1 class="title">البرنامج التدريبي</h1>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="back" href="index.html" aria-label="العودة إلى الرئيسية">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+      </a>
+      <h1>تفاصيل الحقيبة التدريبية</h1>
+      <span aria-hidden="true"></span>
+    </div>
   </header>
 
-  <main class="container">
+  <main>
+    <div class="accordion-list">
+      <details open>
+        <summary><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l3 3v15H6z"/><path d="M9 11h6M9 15h6"/></svg></span><span class="section-title">وصف البرنامج</span><span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+        <div class="content"><p>برنامج تدريبي متكامل يمكّن المتدربين من بناء وتطوير مواقع الويب باستخدام Python وأطرها الحديثة، ويجمع بين الجانب النظري والتطبيق العملي في مشاريع واقعية مع الاستفادة من أدوات الذكاء الاصطناعي.
 
-    <div class="intro">تفاصيل الحقيبة</div>
+يبدأ المسار من أساسيات البرمجة وبيئة Visual Studio Code، ثم الواجهات الأمامية HTML وCSS وJavaScript، وربطها بالواجهة الخلفية عبر Django، وصولًا إلى نشر المشاريع وفق ممارسات بيئة الإنتاج.</p></div>
+      </details>
 
-    <!-- وصف البرنامج -->
-    <section class="accordion" id="sec-desc">
-      <button class="accordion-header">
-        <span><i class="fas fa-file-alt" style="margin-left: 10px;"></i> وصف البرنامج</span>
-        <span class="icon">▼</span>
-      </button>
-      <div class="accordion-content"><p class="mono">
-برنامج تدريبي متكامل يهدف إلى تمكين المتدربين من المهارات العملية لبناء وتطوير مواقع الويب باستخدام لغة Python وأطرها الحديثة. يجمع البرنامج بين الجانب النظري والتطبيقي من خلال تنفيذ مشاريع عملية واقعية، مع الاستفادة من أدوات الذكاء الاصطناعي لتسريع عمليات التطوير وتحسين جودة المخرجات.
-يشمل المسار التدريبي مراحل متعددة تبدأ من تعلم أساسيات البرمجة وأركانها، مرورًا باستخدام بيئات التطوير الرسمية مثل Visual Studio Code، ثم التدرج إلى برمجة الواجهات الأمامية (HTML, CSS, JavaScript) وربطها بالباك إند عبر إطار Django، وصولًا إلى نشر المشاريع على الخوادم باستخدام أفضل الممارسات المعتمدة في بيئة الإنتاج.
-      </p></div>
-    </section>
+      <details>
+        <summary><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M22 12h-3"/></svg></span><span class="section-title">الهدف العام للبرنامج</span><span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+        <div class="content"><p>تمكين المتدربين من بناء مواقع ويب احترافية متكاملة باستخدام Python وDjango، من أساسيات البرمجة والواجهات وقواعد البيانات إلى أدوات الذكاء الاصطناعي والنشر والأمان، بما يؤهلهم لتطوير حلول قابلة للتطبيق في سوق العمل.</p></div>
+      </details>
 
-    <!-- الهدف العام -->
-    <section class="accordion" id="sec-goal">
-      <button class="accordion-header">
-        <span><i class="fas fa-bullseye" style="margin-left: 10px;"></i> الهدف العام للبرنامج</span>
-        <span class="icon">▼</span>
-      </button>
-      <div class="accordion-content"><p class="mono">
-تمكين المتدربين من إتقان بناء مواقع ويب احترافية متكاملة باستخدام Python وإطار Django، ابتداءً من تعلم أساسيات البرمجة والواجهات الأمامية، مرورًا بتصميم وربط قواعد البيانات وإدارة التطبيقات الداخلية، والاستفادة من أدوات الذكاء الاصطناعي في التحليل والبرمجة وحل الأخطاء، وصولًا إلى نشر المشاريع على بيئات الإنتاج مع تطبيق معايير الأمان السيبراني، بما يؤهلهم لتطوير حلول ويب قابلة للتطبيق في سوق العمل.
-      </p></div>
-    </section>
+      <details>
+        <summary><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m4 7 2 2 4-4M4 13l2 2 4-4M13 7h7M13 13h7M4 19l2 2 4-4M13 19h7"/></svg></span><span class="section-title">الأهداف التفصيلية <span class="count">29 هدفًا</span></span><span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+        <div class="content"><ol>
+          <li>التعرف على مفهوم البرمجة وطريقة عمل الواجهات الأمامية والخلفية.</li><li>استخدام أدوات الذكاء الاصطناعي في التعلم وكتابة الأكواد بكفاءة.</li><li>صياغة الأوامر الدقيقة وفهم المخرجات.</li><li>تثبيت وإعداد VS Code ولغة Python.</li><li>فهم مكونات صفحات الويب وعناصر التنقل.</li><li>إتقان أساسيات HTML وCSS وJavaScript.</li><li>تنفيذ مشروع واجهة أمامية تفاعلي.</li><li>تقسيم الصفحات وإنشاء روابط التنقل.</li><li>إنشاء حساب GitHub وإدارة الإصدارات.</li><li>نشر أول موقع ثابت عبر Render.</li><li>التعرف على صفحات الهبوط.</li><li>استخدام Firebase كقاعدة بيانات بسيطة.</li><li>التعرف على إطار Django للواجهة الخلفية.</li><li>فهم هيكلة Django وآلية MVT.</li><li>تحليل هيكلة المشاريع بأدوات الذكاء الاصطناعي.</li><li>إنشاء مشروع Django والتعامل مع الطرفية.</li><li>بناء التطبيقات والنماذج ولوحة التحكم.</li><li>ترحيل الجداول وربط قواعد البيانات.</li><li>ضبط اللغة والتوقيت وبيئة المشروع.</li><li>ربط القوالب وتشغيل الواجهة عبر Django.</li><li>التعرف على SQL وقواعد بيانات الإنتاج.</li><li>ربط Cloudinary لتخزين الملفات.</li><li>إرسال الرسائل الفورية عند التسجيل والمهام.</li><li>نشر مشروع Django على Render.</li><li>معالجة أخطاء النشر الشائعة بمساعدة الذكاء الاصطناعي.</li><li>تحليل الأخطاء وتسريع حلها.</li><li>الحماية من SQLi وXSS وCSRF وتطبيق إعدادات الأمان.</li><li>التعرف على أهم مكتبات Django.</li><li>تنفيذ اختبار عملي لبناء مشروع متكامل ونشره.</li>
+        </ol></div>
+      </details>
 
-    <!-- الأهداف التفصيلية -->
-    <section class="accordion" id="sec-objectives">
-      <button class="accordion-header">
-        <span><i class="fas fa-tasks" style="margin-left: 10px;"></i> الأهداف التفصيلية للحقيبة <span class="badge">29 هدفًا</span></span>
-        <span class="icon">▼</span>
-      </button>
-      <div class="accordion-content"><div class="mono">
-29  هدفًا تسلسليًا لإتقان برمجة مواقع الويب باستخدام بايثون وأدوات الذكاء الاصطناعي:
-1) التعرف على مفهوم البرمجة وكيف تعمل مواقع الويب  Front-End  و Back-End
-2) استخدام أدوات الذكاء الاصطناعي في تعلم البرمجة وكتابة الأكواد بكفاءة.
-3) صياغة أوامر دقيقة (Prompts) وفهم المخرجات.
-4) تثبيت وإعداد بيئة التطوير VS Code ولغة Python.
-5) فهم مكونات صفحات الويب (الصفحة الرئيسية، الشريط العلوي، السفلي، الأزرار والتنقل).
-6) إتقان أساسيات HTML, CSS, JavaScript.
-7) تنفيذ أول مشروع Front-End مع عناصر تفاعلية (صور، فيديو، روابط).
-8) تقسيم الصفحات وإنشاء روابط التنقل.
-9) إنشاء حساب GitHub وإدارة الإصدارات.
-10) نشر أول موقع ثابت عبر Render.
-11) التعرف على صفحات الهبوط (Landing Pages).
-12) استخدام Firebase كقاعدة بيانات بسيطة.
-13) التعرف على إطار Django للباك إند.
-14) فهم هيكلة Django (Settings/URLs/Views/Models/Admin) وآلية MVT.
-15) تحليل هيكلة المشاريع بأدوات الذكاء الاصطناعي.
-16) إنشاء أول مشروع Django والتعامل مع الطرفية.
-17) بناء التطبيقات الداخلية والنماذج (Models) ولوحة التحكم (Admin).
-18) ترحيل الجداول وربط قواعد البيانات وتشغيل الواجهات الأولية.
-19) ضبط إعدادات المشروع (اللغة – التوقيت – البيئة).
-20) ربط القوالب (Templates) لتشغيل أول واجهة عبر Django.
-21) التعرف على قواعد البيانات SQL (MySQL – PostgreSQL – SQLite) وإنشاء قواعد إنتاج.
-22) الربط مع Cloudinary لتخزين الملفات وفهم تكاملات المستقبل (مثل الدفع).
-23) إرسال إيميلات فورية للمستخدمين عند التسجيل/المهام।
-24) نشر مشروع Django على Render.
-25) معالجة أخطاء النشر الشائعة بمساعدة الذكاء.
-26) استخدام الذكاء في تحليل الأخطاء وتسريع الحلول.
-27) حماية ضد (SQLi – XSS – CSRF) وتطبيق إعدادات الأمان/وسطيات.
-28) التعرف على أهم مكتبات Django واستخداماتها.
-29) اختبار نهائي عملي لبناء ورفع مشروع متكامل.
-      </div></div>
-    </section>
+      <details>
+        <summary><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span class="section-title">عدد ساعات التدريب</span><span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+        <div class="content"><ul><li>12 يومًا تدريبيًا.</li><li>5 ساعات يوميًا.</li><li>جلستان يوميًا، مدة كل جلسة ساعتان ونصف.</li><li>إجمالي الساعات: 60 ساعة تدريبية.</li></ul></div>
+      </details>
 
-    <!-- عدد الساعات -->
-    <section class="accordion" id="sec-hours">
-      <button class="accordion-header">
-        <span><i class="fas fa-clock" style="margin-left: 10px;"></i> عدد ساعات التدريب</span>
-        <span class="icon">▼</span>
-      </button>
-      <div class="accordion-content"><div class="mono">
-• إجمالي مدة البرنامج: 12 يومًا تدريبيًا.
-• عدد الساعات اليومية: 5 ساعات يوميًا.
-• تقسيم الجلسات: كل يوم يتكون من جلستين تدريبيتين، مدة كل جلسة ساعتان ونصف.
-• إجمالي الساعات: 60 ساعة تدريبية.
-      </div></div>
-    </section>
+      <details>
+        <summary><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5h18v12H3zM8 21h8M12 17v4"/></svg></span><span class="section-title">نمط التدريب</span><span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+        <div class="content"><ul><li>حضوري داخل قاعات تدريبية مجهزة.</li><li>عن بُعد عبر Zoom أو Google Meet.</li></ul></div>
+      </details>
 
-    <!-- نمط التدريب -->
-    <section class="accordion" id="sec-mode">
-      <button class="accordion-header">
-        <span><i class="fas fa-chalkboard-teacher" style="margin-left: 10px;"></i> نمط التدريب</span>
-        <span class="icon">▼</span>
-      </button>
-      <div class="accordion-content"><div class="mono">
-حضوري: داخل قاعات تدريبية مجهزة.
-عن بُعد (Online): عبر Zoom أو Google Meet.
-      </div></div>
-    </section>
+      <details>
+        <summary><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg></span><span class="section-title">لغة الدورة</span><span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+        <div class="content"><ul><li>الشرح والتدريب باللغة العربية.</li><li>المصطلحات التقنية بالإنجليزية مع شرحها بالعربية.</li></ul></div>
+      </details>
 
-    <!-- لغة الدورة -->
-    <section class="accordion" id="sec-lang">
-      <button class="accordion-header">
-        <span><i class="fas fa-globe" style="margin-left: 10px;"></i> لغة الدورة</span>
-        <span class="icon">▼</span>
-      </button>
-      <div class="accordion-content"><div class="mono">
-• اللغة العربية: لغة الشرح والتدريب الأساسية.
-• المصطلحات التقنية: تُعرض باللغة الإنجليزية مع شرحها بالعربية لتسهيل الفهم والتطبيق.
-      </div></div>
-    </section>
+      <details>
+        <summary><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 19c0-2.2-1.8-4-4-4s-4 1.8-4 4M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM18 9a2.5 2.5 0 0 1 0 5M19 16c1.5.6 2.5 1.7 2.5 3"/></svg></span><span class="section-title">الفئة المستهدفة</span><span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+        <div class="content"><ol><li>المبتدئون الراغبون في دخول تطوير الويب من الصفر.</li><li>طلاب وخريجو الحاسب والتخصصات ذات العلاقة.</li><li>المطورون المبتدئون الراغبون في بناء مشاريع احترافية.</li><li>رواد الأعمال الراغبون في تحويل أفكارهم إلى مواقع عملية.</li><li>المهتمون بتطبيقات الذكاء الاصطناعي في تطوير الويب.</li><li>المهتمون بالعمل الحر في السوقين المحلي والعالمي.</li></ol></div>
+      </details>
 
-    <!-- الفئة المستهدفة -->
-    <section class="accordion" id="sec-audience">
-      <button class="accordion-header">
-        <span><i class="fas fa-users" style="margin-left: 10px;"></i> الفئة المستهدفة</span>
-        <span class="icon">▼</span>
-      </button>
-      <div class="accordion-content"><ol class="list">
-        <li>المبتدئون في البرمجة الراغبون في دخول عالم تطوير الويب من الصفر.</li>
-        <li>طلاب وخريجو الحاسب الآلي والتخصصات ذات العلاقة الراغبون في تنمية مهارات عملية.</li>
-        <li>المطورون المبتدئون mمن لديهم معرفة أولية ويريدون الانتقال لمشاريع احترافية.</li>
-        <li>رواد الأعمال الراغبون في تحويل أفكارهم إلى مواقع عملية.</li>
-        <li>المهتمون بالذكاء الاصطناعي وتطبيقاته في تطوير الويب.</li>
-        <li>المهتمون بالعمل الحر (Freelancing) في السوقين المحلي والعالمي.</li>
-      </ol></div>
-    </section>
+      <details>
+        <summary><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m3 10 9-5 9 5-9 5zM7 13v4c2.8 2.1 7.2 2.1 10 0v-4"/></svg></span><span class="section-title">مؤهل الالتحاق</span><span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+        <div class="content"><ul><li>إلمام أساسي باستخدام الحاسوب والإنترنت.</li><li>المعرفة الأولية بالبرمجة مستحسنة وليست إلزامية.</li><li>القدرة على قراءة المصطلحات الإنجليزية التقنية البسيطة.</li></ul></div>
+      </details>
 
-    <!-- مؤهل الالتحاق -->
-    <section class="accordion" id="sec-eligibility">
-      <button class="accordion-header">
-        <span><i class="fas fa-graduation-cap" style="margin-left: 10px;"></i> مؤهل الالتحاق</span>
-        <span class="icon">▼</span>
-      </button>
-      <div class="accordion-content"><div class="mono">
-• إلمام أساسي باستخدام الحاسوب والإنترنت.
-• معرفة أولية بالبرمجة مستحسن، وليست إلزامية.
-• القدرة على قراءة الإنجليزية بمستوى جيد لفهم المصطلحات التقنية.
-      </div></div>
-    </section>
-
-    <!-- المتطلبات -->
-    <section class="accordion" id="sec-reqs">
-      <button class="accordion-header">
-        <span><i class="fas fa-tools" style="margin-left: 10px;"></i> متطلبات التدريب</span>
-        <span class="icon">▼</span>
-      </button>
-      <div class="accordion-content"><div class="mono">
-• جهاز حاسوب شخصي Intel Core i5 (يفضل i7)، ذاكرة 8GB RAM على الأقل، وقرص SSD.
-• اتصال إنترنت مستقر.
-• نظام تشغيل حديث Windows 10/11 أو macOS أو Linux.
-• الأدوات البرمجية: Python (آخر إصدار مستقر)، Visual Studio Code، Git & GitHub، ومكتبات مساعدة تُحدد أثناء التدريب.
-• التزام المتدرب بحضور جميع الجلسات والمشاركة العملية.
-      </div></div>
-    </section>
-
+      <details>
+        <summary><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m14 7 3 3M5 19l4-4M16 4l4 4-9 9-4-4z"/><path d="M4 20h5"/></svg></span><span class="section-title">متطلبات التدريب</span><span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+        <div class="content"><ul><li>حاسوب بمعالج Intel Core i5 أو أعلى، وذاكرة 8GB وقرص SSD.</li><li>اتصال إنترنت مستقر.</li><li>Windows 10/11 أو macOS أو Linux.</li><li>Python وVisual Studio Code وGit وGitHub.</li><li>الالتزام بالحضور والمشاركة العملية.</li></ul></div>
+      </details>
+    </div>
   </main>
 
-  <footer class="footer">
-    <p>© 2023 البرنامج التدريبي | سامي الزمزمي</p>
-  </footer>
-
-  <script>
-    function goBack() {
-      if (history.length > 1) { history.back(); }
-      else { location.href = '/'; }
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-      const accordions = document.querySelectorAll('.accordion');
-      accordions.forEach(accordion => {
-        const header = accordion.querySelector('.accordion-header');
-        const content = accordion.querySelector('.accordion-content');
-        accordion.classList.remove('open');
-        content.style.maxHeight = '0';
-
-        header.addEventListener('click', () => {
-          const isOpen = accordion.classList.contains('open');
-          if (isOpen) {
-            accordion.classList.remove('open');
-            content.style.maxHeight = '0';
-          } else {
-            accordion.classList.add('open');
-            content.style.maxHeight = content.scrollHeight + 'px';
-            accordion.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        });
-
-        header.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); header.click(); }
-        });
-      });
-
-      if (window.innerWidth > 768) {
-        const firstAccordion = document.querySelector('.accordion');
-        if (firstAccordion) {
-          firstAccordion.classList.add('open');
-          const c = firstAccordion.querySelector('.accordion-content');
-          c.style.maxHeight = c.scrollHeight + 'px';
-        }
-      }
-    });
-  </script>
-
-  <!-- إعادة حساب الارتفاع أثناء تغيير الحجم -->
-  <script>
-    (function(){
-      const recalcAll = () => {
-        document.querySelectorAll('.accordion.open .accordion-content').forEach(c=>{
-          c.style.maxHeight = c.scrollHeight + 'px';
-        });
-      };
-      window.addEventListener('resize', recalcAll);
-      const ro = new ResizeObserver(recalcAll);
-      document.querySelectorAll('.accordion .accordion-content').forEach(c=> ro.observe(c));
-    })();
-  </script>
-
-  <!-- سكربت النجوم -->
-  <script>
-    (function(){
-      const canvas = document.getElementById('stars-canvas');
-      const ctx = canvas.getContext('2d');
-      let stars = [];
-      let W, H;
-
-      function resize(){
-        W = canvas.width = window.innerWidth;
-        H = canvas.height = window.innerHeight;
-        stars = Array.from({length: 220}, () => ({
-          x: Math.random()*W,
-          y: Math.random()*H,
-          r: Math.random()*1.6 + 0.2,
-          s: Math.random()*0.9 + 0.15,
-          tw: Math.random()*0.6 + 0.4   // لمعان خفيف
-        }));
-      }
-
-      function draw(){
-        ctx.clearRect(0,0,W,H);
-        for (const st of stars){
-          const glow = (Math.sin(Date.now()*0.002*st.tw)+1)/2; // 0..1
-          ctx.beginPath();
-          ctx.fillStyle = `rgba(255,255,255,${0.6 + glow*0.4})`;
-          ctx.arc(st.x, st.y, st.r, 0, Math.PI*2);
-          ctx.fill();
-
-          st.y += st.s;
-          if (st.y > H){ st.y = -2; st.x = Math.random()*W; }
-        }
-        requestAnimationFrame(draw);
-      }
-
-      window.addEventListener('resize', resize);
-      resize();
-      draw();
-    })();
-  </script>
 </body>
 </html>
