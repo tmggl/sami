@@ -28,6 +28,9 @@ export const DEFAULT_FORMS = [
       { label: "المدة", value: "أسبوعان — 60 ساعة" },
       { label: "الأيام", value: "يوميًا عدا الجمعة" },
       { label: "الوقت", value: "حسب الفترة المختارة" },
+      { label: "الجهاز المطلوب", value: "لابتوب SSD بمعالج i5 أو أعلى" },
+      { label: "الإنترنت", value: "متوفر في مقر التدريب" },
+      { label: "مساعد الذكاء الاصطناعي", value: "90 ريال — اشتراك شخصي مساعد للبرمجة ويُلغى في أي وقت" },
       { label: "المقاعد", value: "محدودة" },
       { label: "السعر", value: "2800 ريال" },
       { label: "الدفع", value: "بعد التواصل والتأكيد" }
@@ -39,7 +42,7 @@ export const DEFAULT_FORMS = [
       { id: "age", label: "العمر", help: "يجب ألا يقل العمر عن 18 عامًا.", placeholder: "مثال: 24", type: "number", min: 18, required: true },
       { id: "degree", label: "التخصص أو المؤهل العلمي", placeholder: "مثال: بكالوريوس إدارة أعمال", type: "text", required: true },
       { id: "time", label: "حدد الفترة المناسبة لك", help: "جميع الفترات مع المدرب سامي الزمزمي.", type: "radio", required: true, options: ["سيدات فقط — 1 ظهرًا حتى 5 عصرًا", "رجال فقط — 5 عصرًا حتى 10 مساءً", "سيدات ورجال — 5 عصرًا حتى 10 مساءً"] },
-      { id: "computer", label: "هل لديك معرفة عامة باستخدام الكمبيوتر ولديك جهاز لابتوب؟", help: "يشترط توفر لابتوب SSD بمعالج i5 أو أعلى (ويندوز أو ماك).", type: "radio", required: true, options: ["نعم", "لا"] },
+      { id: "computer", label: "هل يتوفر لديك لابتوب SSD بمعالج i5 أو أعلى؟", help: "وجود اللابتوب بهذا المستوى شرط أساسي للاستفادة من التدريب (ويندوز أو ماك).", type: "radio", required: true, options: ["نعم", "لا"] },
       { id: "english", label: "هل تستطيع قراءة وتمييز كلمات إنجليزية بسيطة مثل views و forms؟", help: "المقصود تمييز الكلمة فقط، وليس معرفة معناها.", type: "radio", required: true, options: ["نعم أميزها", "لا"] },
       { id: "notes", label: "هل لديك ملاحظة أو سؤال؟", placeholder: "اختياري", type: "textarea", required: false }
     ]
@@ -60,6 +63,9 @@ export const DEFAULT_FORMS = [
       { label: "النمط", value: "عن بُعد — مباشر" },
       { label: "المدة", value: "10 أيام" },
       { label: "الوقت", value: "من 5 م حتى 10 م" },
+      { label: "الجهاز المطلوب", value: "لابتوب SSD بمعالج i5 أو أعلى" },
+      { label: "الإنترنت", value: "اتصال ثابت لدى المتدرب" },
+      { label: "مساعد الذكاء الاصطناعي", value: "90 ريال — اشتراك شخصي مساعد للبرمجة ويُلغى في أي وقت" },
       { label: "المقاعد", value: "10 مقاعد" },
       { label: "الشهادة", value: "معتمدة — 60 ساعة" },
       { label: "السعر", value: "2200 ريال" },
@@ -73,17 +79,17 @@ export const DEFAULT_FORMS = [
       { id: "city", label: "المدينة", type: "text", required: true },
       { id: "computer", label: "هل تتعامل مع الكمبيوتر بشكل جيد؟", type: "radio", required: true, options: ["نعم", "إلى حد ما", "لا"] },
       { id: "english", label: "ما مدى قدرتك على قراءة كلمات إنجليزية بسيطة؟", type: "radio", required: true, options: ["جيدة", "متوسطة", "ضعيفة"] },
-      { id: "laptop", label: "هل لديك لابتوب SSD بمعالج i5 أو أعلى؟", type: "radio", required: true, options: ["نعم", "لا"] },
+      { id: "laptop", label: "هل لديك لابتوب SSD بمعالج i5 أو أعلى؟", help: "وجود اللابتوب بهذا المستوى شرط أساسي للاستفادة من التدريب (ويندوز أو ماك).", type: "radio", required: true, options: ["نعم", "لا"] },
       { id: "notes", label: "ما الذي تتطلع إلى تعلمه؟", placeholder: "اكتب هدفك باختصار (اختياري)", type: "textarea", required: false }
     ]
   },
   {
     id: "in-person-project",
-    cardTitle: "الدورة الحضورية الجديدة",
+    cardTitle: "معسكر التمكين",
     cardDescription: "شهر من التدريب والتطبيق لبناء مشروعك الشخصي وتجهيزه للإنتاج والنشر.",
     price: 4500,
-    title: "طلب الالتحاق بالدورة الحضورية الجديدة",
-    eyebrow: "مسار المشروع الشخصي — الرياض",
+    title: "طلب الالتحاق بمعسكر التمكين",
+    eyebrow: "حضوري في الرياض — من الفكرة إلى النشر",
     description: "دورة حضورية مدمجة تبدأ بالتدريب العملي، ثم ينتقل كل متدرب لبناء مشروعه الشخصي مع المتابعة حتى يصبح جاهزًا للإنتاج والنشر.",
     status: "published",
     submitLabel: "إرسال طلب الالتحاق",
@@ -97,6 +103,9 @@ export const DEFAULT_FORMS = [
       { label: "المرحلة الأولى", value: "أسبوع إلى أسبوعين تدريب عملي" },
       { label: "المرحلة الثانية", value: "بناء المشروع الشخصي وتجهيزه للنشر" },
       { label: "الدعم", value: "متابعة عن بُعد حتى اكتمال المشروع" },
+      { label: "الجهاز المطلوب", value: "لابتوب SSD بمعالج i5 أو أعلى" },
+      { label: "الإنترنت", value: "متوفر في مقر التدريب" },
+      { label: "مساعد الذكاء الاصطناعي", value: "90 ريال — اشتراك شخصي مساعد للبرمجة ويُلغى في أي وقت" },
       { label: "السعر", value: "4500 ريال" },
       { label: "الدفع", value: "بعد التواصل والتأكيد" }
     ],
@@ -108,7 +117,7 @@ export const DEFAULT_FORMS = [
       { id: "city", label: "المدينة", placeholder: "اكتب مدينتك", type: "text", required: true },
       { id: "riyadh", label: "هل يمكنك الالتزام بالحضور في الرياض؟", type: "radio", required: true, options: ["نعم", "لا"] },
       { id: "time", label: "حدد الفترة المناسبة لك", type: "radio", required: true, options: ["1 ظهرًا حتى 5 عصرًا", "5 عصرًا حتى 10 مساءً"] },
-      { id: "computer", label: "هل لديك معرفة عامة باستخدام الكمبيوتر ولديك جهاز لابتوب؟", help: "يشترط توفر لابتوب SSD بمعالج i5 أو أعلى (ويندوز أو ماك).", type: "radio", required: true, options: ["نعم", "لا"] },
+      { id: "computer", label: "هل يتوفر لديك لابتوب SSD بمعالج i5 أو أعلى؟", help: "وجود اللابتوب بهذا المستوى شرط أساسي للاستفادة من التدريب (ويندوز أو ماك).", type: "radio", required: true, options: ["نعم", "لا"] },
       { id: "english", label: "هل تستطيع قراءة وتمييز كلمات إنجليزية بسيطة مثل views و forms؟", help: "المقصود تمييز الكلمة فقط، وليس معرفة معناها.", type: "radio", required: true, options: ["نعم أميزها", "لا"] },
       { id: "project", label: "هل لديك فكرة لمشروعك الشخصي؟", placeholder: "اكتب الفكرة باختصار، ويمكنك تركها فارغة إذا لم تحددها بعد", type: "textarea", required: false },
       { id: "notes", label: "هل لديك ملاحظة أو سؤال؟", placeholder: "اختياري", type: "textarea", required: false }
@@ -128,11 +137,15 @@ export const DEFAULT_FORMS = [
     successMessage: "سنتواصل مع ولي الأمر عبر واتساب لتأكيد المقعد وإرسال تفاصيل البرنامج. لا يوجد دفع في هذه المرحلة.",
     details: [
       { label: "الفئة العمرية", value: "12–17 عامًا" },
+      { label: "المدينة", value: "الرياض أو أبها" },
       { label: "المدة", value: "6 أيام — 4 ساعات يوميًا" },
       { label: "الوقت", value: "من 5 م حتى 9 م" },
       { label: "التجربة", value: "بريك وفعاليات وتحديات تنمّي الموهبة" },
       { label: "المحتوى", value: "واجهات وألعاب مبسطة" },
       { label: "الأدوات", value: "VS Code وGitHub" },
+      { label: "الجهاز المطلوب", value: "لابتوب SSD بمعالج i5 أو أعلى" },
+      { label: "الإنترنت", value: "متوفر في مقر التدريب" },
+      { label: "مساعد الذكاء الاصطناعي", value: "90 ريال — اشتراك شخصي مساعد للبرمجة ويُلغى في أي وقت" },
       { label: "المشروع", value: "صفحة هبوط أو لعبة ويب" },
       { label: "السعر", value: "800 ريال" },
       { label: "الدفع", value: "بعد التواصل والتأكيد" }
@@ -142,8 +155,8 @@ export const DEFAULT_FORMS = [
       { id: "age", label: "عمر المتدرب", help: "المسار مخصص للأعمار من 12 إلى 17 عامًا.", placeholder: "من 12 إلى 17", type: "number", min: 12, max: 17, required: true },
       { id: "guardian", label: "اسم ولي الأمر", placeholder: "الاسم الكامل", type: "text", required: true },
       { id: "phone", label: "رقم واتساب ولي الأمر", help: "اكتب الرقم بصيغة 05XXXXXXXX", placeholder: "05XXXXXXXX", type: "tel", required: true },
-      { id: "city", label: "المدينة", type: "text", required: true },
-      { id: "laptop", label: "هل يتوفر للمتدرب جهاز لابتوب؟", type: "radio", required: true, options: ["نعم", "لا"] },
+      { id: "city", label: "اختر مدينة إقامة تدريب الأشبال", type: "radio", required: true, options: ["الرياض", "أبها"] },
+      { id: "laptop", label: "هل يتوفر للمتدرب لابتوب SSD بمعالج i5 أو أعلى؟", help: "وجود اللابتوب بهذا المستوى شرط أساسي للاستفادة من التدريب (ويندوز أو ماك).", type: "radio", required: true, options: ["نعم", "لا"] },
       { id: "experience", label: "هل سبق له تجربة البرمجة؟", help: "لا يشترط وجود خبرة سابقة.", type: "radio", required: true, options: ["هذه أول تجربة", "تجربة بسيطة", "لديه معرفة جيدة"] },
       { id: "interest", label: "ما أكثر شيء يحبه؟", type: "checkbox", required: false, options: ["تصميم الواجهات", "الألعاب", "حل التحديات", "الذكاء الاصطناعي"] },
       { id: "notes", label: "ملاحظات ولي الأمر", placeholder: "أي معلومات تساعدنا على تقديم تجربة أفضل (اختياري)", type: "textarea", required: false }

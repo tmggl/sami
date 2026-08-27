@@ -1,10 +1,8 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
-import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
-import { FIREBASE_CONFIG, DEFAULT_FORMS, escapeHTML } from "./forms-config.js?v=20260827-junior-schedule-1";
+import { FIREBASE_CONFIG, FIRESTORE_DATABASE, DEFAULT_FORMS, escapeHTML } from "./forms-config.js?v=20260827-project-title-2";
+import { decodeFirestoreDocument, fetchWithTimeout } from "./firestore-rest.js?v=20260827-mobile-success-1";
 
-const app = initializeApp(FIREBASE_CONFIG);
-const db = getFirestore(app);
 const programsGrid = document.getElementById("programsGrid");
+const formsEndpoint = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/${FIRESTORE_DATABASE}/documents/forms?key=${encodeURIComponent(FIREBASE_CONFIG.apiKey)}&pageSize=50`;
 
 const presentation = {
   "in-person": {
@@ -30,15 +28,17 @@ const presentation = {
 };
 
 async function loadPrograms() {
-  let remote = [];
+  programsGrid.innerHTML = mergePrograms([]).filter(item => item.status !== "deleted").map(renderProgram).join("");
   try {
-    const snapshot = await getDocs(collection(db, "forms"));
-    remote = snapshot.docs.map(item => ({ id: item.id, ...item.data() }));
+    const response = await fetchWithTimeout(formsEndpoint, { cache: "no-store" }, 3000);
+    if (!response.ok) throw new Error(`Firestore ${response.status}`);
+    const result = await response.json();
+    const remote = (result.documents || []).map(document => ({ id: decodeURIComponent(document.name.split("/").pop()), ...decodeFirestoreDocument(document) }));
+    const programs = mergePrograms(remote).filter(item => item.status !== "deleted");
+    programsGrid.innerHTML = programs.map(renderProgram).join("");
   } catch (error) {
-    console.warn("تم استخدام بيانات المسارات الافتراضية.", error);
+    console.warn("تم عرض بيانات المسارات السريعة المضمّنة.", error);
   }
-  const programs = mergePrograms(remote).filter(item => item.status !== "deleted");
-  programsGrid.innerHTML = programs.map(renderProgram).join("");
 }
 
 function mergePrograms(remote) {

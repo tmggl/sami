@@ -1,48 +1,57 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
-import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
-import { FIREBASE_CONFIG, FIRESTORE_DATABASE, DEFAULT_FORMS, escapeHTML } from "./forms-config.js?v=20260827-junior-schedule-1";
+import { FIREBASE_CONFIG, FIRESTORE_DATABASE, DEFAULT_FORMS, escapeHTML } from "./forms-config.js?v=20260827-project-title-2";
+import { decodeFirestoreDocument, encodeFirestoreFields, fetchWithTimeout } from "./firestore-rest.js?v=20260827-mobile-success-1";
 
-const app = initializeApp(FIREBASE_CONFIG);
-const db = getFirestore(app, FIRESTORE_DATABASE);
 const params = new URLSearchParams(location.search);
 const requestedId = params.get("form") || "in-person";
+const firestoreBase = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/${FIRESTORE_DATABASE}/documents`;
+const apiKey = encodeURIComponent(FIREBASE_CONFIG.apiKey);
 
 const hero = document.getElementById("formHero");
 const container = document.getElementById("formContainer");
 const detailsCard = document.getElementById("detailsCard");
 let activeForm;
+let formTouched = false;
+let submittedAnswers = {};
 
 function localForm() {
   return DEFAULT_FORMS.find(item => item.id === requestedId) || DEFAULT_FORMS[0];
 }
 
-async function loadForm() {
-  const fallback = localForm();
+async function refreshFormFromCloud() {
   try {
-    const snapshot = await getDoc(doc(db, "forms", requestedId));
-    activeForm = snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : fallback;
+    const response = await fetchWithTimeout(`${firestoreBase}/forms/${encodeURIComponent(requestedId)}?key=${apiKey}`, { cache: "no-store" }, 3000);
+    if (!response.ok) throw new Error(`Firestore ${response.status}`);
+    const cloudForm = { id: requestedId, ...decodeFirestoreDocument(await response.json()) };
+    if (!formTouched) {
+      activeForm = cloudForm;
+      renderForm();
+    }
   } catch (error) {
-    console.warn("تعذر تحميل إعدادات النموذج، تم استخدام النسخة الافتراضية.", error);
-    activeForm = fallback;
+    console.warn("تم عرض النسخة السريعة المضمّنة من النموذج.", error);
   }
-  renderForm();
-  syncLocalResponses();
 }
 
 function renderForm() {
+  const details = Array.isArray(activeForm.details) ? activeForm.details : [];
+  const deviceRequirement = details.find(item => item.label === "الجهاز المطلوب")?.value || "لابتوب SSD بمعالج i5 أو أعلى";
+  const internetRequirement = details.find(item => item.label === "الإنترنت")?.value || "اتصال إنترنت مناسب";
   document.title = `${activeForm.title} | سامي الزمزمي`;
   hero.innerHTML = `
     <span class="eyebrow">${escapeHTML(activeForm.eyebrow || "برنامج تدريبي")}</span>
     <h1>${escapeHTML(activeForm.title)}</h1>
     <p>${escapeHTML(activeForm.description || "")}</p>
     <div class="no-payment">✓ لا يوجد دفع الآن — سنتواصل معك أولًا</div>
+    <div class="key-requirements" aria-label="متطلبات مهمة">
+      <div><span aria-hidden="true">▣</span><p><b>الجهاز شرط أساسي</b><small>${escapeHTML(deviceRequirement)}</small></p></div>
+      <div><span aria-hidden="true">⌁</span><p><b>الإنترنت</b><small>${escapeHTML(internetRequirement)}</small></p></div>
+      <div><span aria-hidden="true">✦</span><p><b>مساعد الذكاء الاصطناعي</b><small><span class="tiny-price" dir="ltr"><img src="assets/saudi-riyal-symbol.svg" alt="ريال سعودي">90</span> اشتراك شخصي يُلغى في أي وقت</small></p></div>
+    </div>
   `;
 
-  const details = Array.isArray(activeForm.details) ? activeForm.details : [];
   detailsCard.innerHTML = `
     <h2>تفاصيل البرنامج</h2>
     <dl class="detail-list">
-      ${details.map(item => `<div class="detail-item"><dt>${escapeHTML(item.label)}</dt><dd>${item.label === "السعر" && activeForm.price ? `<span class="inline-price"><img src="assets/saudi-riyal-symbol.svg" alt="ريال سعودي"><span>${escapeHTML(activeForm.price)}</span></span>` : escapeHTML(item.value)}</dd></div>`).join("")}
+      ${details.map(item => `<div class="detail-item"><dt>${escapeHTML(item.label)}</dt><dd>${renderDetailValue(item)}</dd></div>`).join("")}
     </dl>
   `;
 
@@ -68,6 +77,13 @@ function renderForm() {
     </form>`;
 
   document.getElementById("dynamicForm").addEventListener("submit", submitForm);
+}
+
+function renderDetailValue(item) {
+  const rawValue = item.label === "السعر" && activeForm.price ? `${activeForm.price} ريال` : String(item.value || "");
+  const cost = rawValue.match(/^(\d+(?:\.\d+)?)\s*ريال(?:\s*[—-]\s*)?(.*)$/);
+  if (!cost) return escapeHTML(rawValue);
+  return `<span class="detail-cost"><span class="inline-price"><img src="assets/saudi-riyal-symbol.svg" alt="ريال سعودي"><span>${escapeHTML(cost[1])}</span></span>${cost[2] ? `<small>${escapeHTML(cost[2])}</small>` : ""}</span>`;
 }
 
 function renderQuestion(question, index) {
@@ -123,6 +139,7 @@ async function submitForm(event) {
   for (const question of activeForm.questions || []) {
     answers[question.id] = question.type === "checkbox" ? formData.getAll(question.id) : (formData.get(question.id) || "");
   }
+  submittedAnswers = answers;
 
   const payload = {
     formId: activeForm.id,
@@ -131,12 +148,12 @@ async function submitForm(event) {
     ...answers,
     status: "new",
     source: "website",
-    createdAt: serverTimestamp(),
+    createdAt: new Date(),
     createdAtISO: new Date().toISOString()
   };
 
   try {
-    await addDoc(collection(db, "registrations"), payload);
+    await createRegistration(payload);
     showSuccess();
   } catch (error) {
     console.error("تعذر الحفظ السحابي", error);
@@ -148,14 +165,26 @@ async function submitForm(event) {
 }
 
 function showSuccess(overrideMessage = "") {
+  const summary = [
+    ["البرنامج", activeForm.cardTitle || activeForm.title],
+    ["اسم المتدرب", submittedAnswers.name],
+    ["ولي الأمر", submittedAnswers.guardian],
+    ["الجوال", submittedAnswers.phone],
+    ["المدينة", submittedAnswers.city],
+    ["الفترة", submittedAnswers.time]
+  ].filter(([, value]) => value && (!Array.isArray(value) || value.length));
+  document.body.classList.add("submission-complete");
   container.innerHTML = `
-    <div class="success-view">
+    <div class="success-view submission-success">
       <div class="success-icon">✓</div>
+      <span class="success-kicker">تم الإرسال بنجاح</span>
       <h2>${escapeHTML(activeForm.successTitle || "تم استلام طلبك")}</h2>
       <p>${escapeHTML(overrideMessage || activeForm.successMessage || "سنتواصل معك قريبًا عبر واتساب.")}</p>
+      <div class="success-summary">${summary.map(([label, value]) => `<div class="success-summary-item"><small>${escapeHTML(label)}</small><b ${label === "الجوال" ? 'dir="ltr"' : ""}>${escapeHTML(Array.isArray(value) ? value.join("، ") : value)}</b></div>`).join("")}</div>
+      <div class="success-next"><span aria-hidden="true">◉</span><div><b>الخطوة التالية</b><small>سنراجع الطلب ونتواصل معكم قريبًا عبر واتساب.</small></div></div>
       <a class="primary-btn" href="index.html">العودة للموقع</a>
     </div>`;
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  window.scrollTo({ top: 0, behavior: "auto" });
 }
 
 async function syncLocalResponses() {
@@ -165,7 +194,7 @@ async function syncLocalResponses() {
   for (const item of pending) {
     try {
       const { id, createdAt, ...data } = item;
-      await addDoc(collection(db, "registrations"), { ...data, createdAt: serverTimestamp() });
+      await createRegistration({ ...data, createdAt: new Date(data.createdAtISO || Date.now()) }, 5000);
     } catch (error) {
       remaining.push(item);
     }
@@ -173,4 +202,19 @@ async function syncLocalResponses() {
   localStorage.setItem("sami_responses_v1", JSON.stringify(remaining));
 }
 
-loadForm();
+async function createRegistration(payload, timeout = 9000) {
+  const response = await fetchWithTimeout(`${firestoreBase}/registrations?key=${apiKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fields: encodeFirestoreFields(payload) }),
+    keepalive: true
+  }, timeout);
+  if (!response.ok) throw new Error(`Firestore ${response.status}: ${await response.text()}`);
+  return response.json();
+}
+
+container.addEventListener("input", () => { formTouched = true; }, { once: true });
+activeForm = localForm();
+renderForm();
+setTimeout(refreshFormFromCloud, 0);
+setTimeout(syncLocalResponses, 1200);

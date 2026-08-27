@@ -18,6 +18,19 @@ function buildNotificationMessage(data, adminUrl) {
   ].filter(Boolean).join("\n");
 }
 
+function buildRegistrantConfirmationMessage() {
+  return "تم استلام طلب انضمامك. سنتواصل معكم قريبًا عبر واتساب.";
+}
+
+function normalizeSaudiMobile(value = "") {
+  let digits = String(value).replace(/\D/g, "");
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (digits.startsWith("9660")) digits = `966${digits.slice(4)}`;
+  else if (digits.startsWith("0")) digits = `966${digits.slice(1)}`;
+  else if (digits.startsWith("5") && digits.length === 9) digits = `966${digits}`;
+  return /^9665\d{8}$/.test(digits) ? digits : "";
+}
+
 async function sendMsegatSms({ username, apiKey, sender, phone, message }) {
   const response = await fetch("https://www.msegat.com/gw/sendsms.php", {
     method: "POST",
@@ -42,4 +55,4 @@ async function sendMsegatSms({ username, apiKey, sender, phone, message }) {
   return { id: String(result.id || ""), code };
 }
 
-module.exports = { cleanText, buildNotificationMessage, sendMsegatSms };
+module.exports = { cleanText, buildNotificationMessage, buildRegistrantConfirmationMessage, normalizeSaudiMobile, sendMsegatSms };

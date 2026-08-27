@@ -5,7 +5,7 @@ const { defineSecret } = require("firebase-functions/params");
 const { logger } = require("firebase-functions");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
-const { cleanText, buildNotificationMessage, sendMsegatSms } = require("./lib/notification");
+const { cleanText, buildNotificationMessage, buildRegistrantConfirmationMessage, normalizeSaudiMobile, sendMsegatSms } = require("./lib/notification");
 
 initializeApp();
 
@@ -39,18 +39,54 @@ exports.notifyAdminOnRegistration = onDocumentCreated({
   });
   if (!shouldSend) return;
 
-  try {
-    const result = await sendMsegatSms({
+  const answers = data.answers || {};
+  const registrantPhone = normalizeSaudiMobile(answers.phone || data.phone);
+  const smsJobs = [{
+    key: "adminSms",
+    promise: sendMsegatSms({
       username: MSEGAT_USERNAME.value(),
       apiKey: MSEGAT_API_KEY.value(),
       sender: MSEGAT_SENDER_NAME.value(),
       phone: ADMIN_NOTIFICATION_PHONE.value(),
       message: buildNotificationMessage(data, ADMIN_PANEL_URL.value()),
+    }),
+  }];
+
+  if (registrantPhone) {
+    smsJobs.push({
+      key: "registrantSms",
+      promise: sendMsegatSms({
+        username: MSEGAT_USERNAME.value(),
+        apiKey: MSEGAT_API_KEY.value(),
+        sender: MSEGAT_SENDER_NAME.value(),
+        phone: registrantPhone,
+        message: buildRegistrantConfirmationMessage(),
+      }),
     });
-    await eventRef.set({ status: "sent", providerId: result.id, sentAt: FieldValue.serverTimestamp() }, { merge: true });
-    logger.info("Registration SMS notification sent", { registrationId: event.params.registrationId });
-  } catch (error) {
-    await eventRef.set({ status: "failed", error: cleanText(error.message, 120), failedAt: FieldValue.serverTimestamp() }, { merge: true });
-    logger.error("Registration SMS notification failed", { registrationId: event.params.registrationId, error: cleanText(error.message, 120) });
   }
+
+  const results = await Promise.allSettled(smsJobs.map(job => job.promise));
+  const update = { completedAt: FieldValue.serverTimestamp() };
+  let sentCount = 0;
+  let failedCount = 0;
+
+  results.forEach((result, index) => {
+    const key = smsJobs[index].key;
+    if (result.status === "fulfilled") {
+      sentCount += 1;
+      update[`${key}Status`] = "sent";
+      update[`${key}ProviderId`] = result.value.id;
+    } else {
+      failedCount += 1;
+      update[`${key}Status`] = "failed";
+      update[`${key}Error`] = cleanText(result.reason?.message, 120);
+    }
+  });
+
+  if (!registrantPhone) update.registrantSmsStatus = "skipped_invalid_phone";
+  update.status = failedCount === 0 && registrantPhone ? "sent" : sentCount ? "partial" : "failed";
+  await eventRef.set(update, { merge: true });
+
+  if (failedCount) logger.error("One or more registration SMS messages failed", { registrationId: event.params.registrationId, failedCount });
+  else logger.info("Registration SMS messages completed", { registrationId: event.params.registrationId, registrantSent: Boolean(registrantPhone) });
 });
