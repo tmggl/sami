@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
-import { getFirestore, collection, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
 import { FIREBASE_CONFIG, FIRESTORE_DATABASE, DEFAULT_FORMS, DEFAULT_MESSAGES, FIELD_LABELS, normalizePhone, escapeHTML, createId } from "./forms-config.js?v=20260827-project-title-2";
 
 const firebaseApp = initializeApp(FIREBASE_CONFIG);
@@ -14,6 +14,7 @@ let messages = clone(DEFAULT_MESSAGES);
 let selectedFormId = forms[0].id;
 let whatsappResponse = null;
 let selectedMessageId = messages[0].id;
+let isJuniorAdmin = false;
 
 const $ = selector => document.querySelector(selector);
 const loginScreen = $("#loginScreen");
@@ -53,8 +54,24 @@ onAuthStateChanged(auth, async user => {
   }
   loginScreen.classList.add("hidden");
   adminApp.classList.remove("hidden");
+  isJuniorAdmin = user.email === "966555967209@admin.sami.local";
+  configureRoleView();
   await loadDashboard();
 });
+
+function configureRoleView() {
+  const messagesNav = document.querySelector('[data-view="messages"]');
+  const createTopButton = document.querySelector('.top-actions [data-go="forms"]');
+  const previewTopLink = document.querySelector(".top-actions a");
+  const sidebarFormLink = document.querySelector(".sidebar-footer a");
+  messagesNav?.classList.toggle("hidden", isJuniorAdmin);
+  createTopButton?.classList.toggle("hidden", isJuniorAdmin);
+  if (previewTopLink) previewTopLink.href = isJuniorAdmin ? "form.html?form=junior" : "form.html?form=in-person";
+  if (sidebarFormLink) {
+    sidebarFormLink.href = isJuniorAdmin ? "form.html?form=junior" : "form.html?form=in-person";
+    sidebarFormLink.textContent = isJuniorAdmin ? "فتح نموذج الأشبال ↗" : "فتح نموذج التسجيل ↗";
+  }
+}
 
 function friendlyAuthError(code = "") {
   if (code.includes("invalid-phone")) return "رقم الجوال غير صحيح. اكتبه بصيغة 05XXXXXXXX.";
@@ -66,9 +83,12 @@ function friendlyAuthError(code = "") {
 
 async function loadDashboard() {
   try {
+    const registrationsSource = isJuniorAdmin
+      ? query(collection(db, "registrations"), where("formId", "==", "junior"))
+      : collection(db, "registrations");
     const [formsSnapshot, registrationsSnapshot, messagesSnapshot, systemSnapshot] = await Promise.all([
       getDocs(collection(db, "forms")),
-      getDocs(collection(db, "registrations")),
+      getDocs(registrationsSource),
       getDoc(doc(db, "settings", "whatsappMessages")),
       getDoc(doc(db, "settings", "formSystem"))
     ]);
@@ -83,6 +103,7 @@ async function loadDashboard() {
     } else {
       forms = mergeFormsWithDefaults(remoteForms);
     }
+    if (isJuniorAdmin) forms = forms.filter(item => item.id === "junior");
     responses = registrationsSnapshot.docs.map(item => normalizeResponse(item.id, item.data()));
     if (messagesSnapshot.exists() && Array.isArray(messagesSnapshot.data().items)) messages = messagesSnapshot.data().items;
   } catch (error) {
@@ -92,7 +113,9 @@ async function loadDashboard() {
 
   const localResponses = JSON.parse(localStorage.getItem("sami_responses_v1") || "[]");
   const knownIds = new Set(responses.map(item => item.id));
-  responses.push(...localResponses.filter(item => !knownIds.has(item.id)).map(item => normalizeResponse(item.id, item)));
+  responses.push(...localResponses
+    .filter(item => !knownIds.has(item.id) && (!isJuniorAdmin || item.formId === "junior"))
+    .map(item => normalizeResponse(item.id, item)));
   responses.sort((a, b) => responseDate(b) - responseDate(a));
   selectedFormId = forms.some(item => item.id === selectedFormId) ? selectedFormId : forms[0]?.id;
   renderAll();
@@ -124,6 +147,7 @@ function renderAll() {
   renderFormFilter();
   renderResponses();
   renderMessages();
+  document.getElementById("addFormButton")?.classList.toggle("hidden", isJuniorAdmin);
 }
 
 document.addEventListener("click", event => {

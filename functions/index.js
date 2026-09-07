@@ -13,13 +13,14 @@ const MSEGAT_USERNAME = defineSecret("MSEGAT_USERNAME");
 const MSEGAT_API_KEY = defineSecret("MSEGAT_API_KEY");
 const MSEGAT_SENDER_NAME = defineSecret("MSEGAT_SENDER_NAME");
 const ADMIN_NOTIFICATION_PHONE = defineSecret("ADMIN_NOTIFICATION_PHONE");
+const JUNIOR_ADMIN_NOTIFICATION_PHONE = defineSecret("JUNIOR_ADMIN_NOTIFICATION_PHONE");
 const ADMIN_PANEL_URL = defineSecret("ADMIN_PANEL_URL");
 
 exports.notifyAdminOnRegistration = onDocumentCreated({
   document: "registrations/{registrationId}",
   database: "sami-training",
   region: "europe-west3",
-  secrets: [MSEGAT_USERNAME, MSEGAT_API_KEY, MSEGAT_SENDER_NAME, ADMIN_NOTIFICATION_PHONE, ADMIN_PANEL_URL],
+  secrets: [MSEGAT_USERNAME, MSEGAT_API_KEY, MSEGAT_SENDER_NAME, ADMIN_NOTIFICATION_PHONE, JUNIOR_ADMIN_NOTIFICATION_PHONE, ADMIN_PANEL_URL],
 }, async event => {
   const data = event.data?.data();
   if (!data) return;
@@ -51,6 +52,19 @@ exports.notifyAdminOnRegistration = onDocumentCreated({
       message: buildNotificationMessage(data, ADMIN_PANEL_URL.value()),
     }),
   }];
+
+  if (data.formId === "junior") {
+    smsJobs.push({
+      key: "juniorAdminSms",
+      promise: sendMsegatSms({
+        username: MSEGAT_USERNAME.value(),
+        apiKey: MSEGAT_API_KEY.value(),
+        sender: MSEGAT_SENDER_NAME.value(),
+        phone: JUNIOR_ADMIN_NOTIFICATION_PHONE.value(),
+        message: buildNotificationMessage(data, ADMIN_PANEL_URL.value()),
+      }),
+    });
+  }
 
   if (registrantPhone) {
     smsJobs.push({

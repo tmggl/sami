@@ -2,14 +2,25 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isAdmin() {
+    function isPrimaryAdmin() {
       return request.auth != null
         && request.auth.token.email == '966501424219@admin.sami.local';
     }
 
+    function isJuniorAdmin() {
+      return request.auth != null
+        && request.auth.token.email == '966555967209@admin.sami.local';
+    }
+
+    function isAdmin() {
+      return isPrimaryAdmin() || isJuniorAdmin();
+    }
+
     match /forms/{formId} {
       allow read: if true;
-      allow create, update, delete: if isAdmin();
+      allow create: if isPrimaryAdmin();
+      allow update, delete: if isPrimaryAdmin()
+        || (isJuniorAdmin() && formId == 'junior');
     }
 
     match /registrations/{registrationId} {
@@ -21,11 +32,17 @@ service cloud.firestore {
         && request.resource.data.formId is string
         && request.resource.data.formTitle is string
         && request.resource.data.answers is map;
-      allow read, update, delete: if isAdmin();
+      allow read, delete: if isPrimaryAdmin()
+        || (isJuniorAdmin() && resource.data.formId == 'junior');
+      allow update: if isPrimaryAdmin()
+        || (isJuniorAdmin()
+          && resource.data.formId == 'junior'
+          && request.resource.data.formId == 'junior');
     }
 
     match /settings/{settingId} {
-      allow read, write: if isAdmin();
+      allow read: if isAdmin();
+      allow write: if isPrimaryAdmin();
     }
 
     match /{document=**} {
