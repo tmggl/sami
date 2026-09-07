@@ -168,14 +168,15 @@ function renderQuestion(programId, question, index) {
   } else if (question.type === "select") {
     input = `<select class="inline-field" id="${inputId}" name="${name}" ${required}><option value="">اختر إجابة</option>${(question.options || []).map(option => `<option>${escapeHTML(option)}</option>`).join("")}</select>`;
   } else if (question.type === "textarea") {
-    input = `<textarea class="inline-field" id="${inputId}" name="${name}" placeholder="${placeholder}" ${required}></textarea>`;
+    input = `<textarea class="inline-field" id="${inputId}" name="${name}" placeholder="${placeholder}" maxlength="1000" ${required}></textarea>`;
   } else {
     const type = ["text", "tel", "number", "email", "date"].includes(question.type) ? question.type : "text";
     const phoneAttrs = type === "tel" ? 'inputmode="tel" autocomplete="tel" pattern="(?:\\+?966|0)?5[0-9]{8}"' : "";
+    const lengthAttrs = type === "tel" ? 'maxlength="16"' : ["text", "email"].includes(type) ? 'maxlength="200"' : "";
     const nameAttrs = question.id === "name" ? 'autocomplete="name"' : "";
     const min = question.min !== undefined ? `min="${Number(question.min)}"` : "";
     const max = question.max !== undefined ? `max="${Number(question.max)}"` : "";
-    input = `<input class="inline-field" id="${inputId}" name="${name}" type="${type}" placeholder="${placeholder}" ${phoneAttrs} ${nameAttrs} ${min} ${max} ${required}>`;
+    input = `<input class="inline-field" id="${inputId}" name="${name}" type="${type}" placeholder="${placeholder}" ${phoneAttrs} ${lengthAttrs} ${nameAttrs} ${min} ${max} ${required}>`;
   }
 
   return `<div class="inline-question">${label}${help}${input}</div>`;
@@ -268,7 +269,6 @@ async function submitInlineForm(event) {
     formId: program.id,
     formTitle: program.title,
     answers,
-    ...answers,
     status: "new",
     source: "website",
     createdAt: new Date(),
@@ -339,8 +339,15 @@ async function syncLocalResponses() {
   const remaining = [];
   for (const item of pending) {
     try {
-      const { id, createdAt, ...data } = item;
-      await createRegistration({ ...data, source: "website", createdAt: new Date(data.createdAtISO || Date.now()) }, 5000);
+      await createRegistration({
+        formId: item.formId,
+        formTitle: item.formTitle,
+        answers: item.answers || {},
+        status: "new",
+        source: "website",
+        createdAt: new Date(),
+        createdAtISO: item.createdAtISO || new Date().toISOString()
+      }, 5000);
     } catch (error) {
       remaining.push(item);
     }

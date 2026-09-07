@@ -13,13 +13,12 @@ let responses = [];
 let messages = clone(DEFAULT_MESSAGES);
 let selectedFormId = forms[0].id;
 let whatsappResponse = null;
-let selectedMessageId = messages[0].id;
 let isJuniorAdmin = false;
 
 const $ = selector => document.querySelector(selector);
 const loginScreen = $("#loginScreen");
 const adminApp = $("#adminApp");
-const statusLabels = { new: "جديد", contacted: "تمت الدعوة", accepted: "مقبول سابقًا", declined: "مرفوض" };
+const statusLabels = { new: "جديد", contacted: "تمت الدعوة", accepted: "مقبول", declined: "مرفوض" };
 const viewTitles = { overview: "نظرة عامة", forms: "إدارة النماذج", responses: "ردود المتدربين", messages: "رسائل واتساب" };
 
 $("#todayLabel").textContent = new Intl.DateTimeFormat("ar-SA-u-nu-latn", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
@@ -115,6 +114,7 @@ async function loadDashboard() {
   responses.push(...localResponses
     .filter(item => !knownIds.has(item.id) && (!isJuniorAdmin || item.formId === "junior"))
     .map(item => normalizeResponse(item.id, item)));
+  messages = [clone(invitationTemplate())];
   responses.sort((a, b) => responseDate(b) - responseDate(a));
   selectedFormId = forms.some(item => item.id === selectedFormId) ? selectedFormId : forms[0]?.id;
   renderAll();
@@ -198,7 +198,7 @@ function renderBars(element, items, color) {
 }
 
 function recentRow(item) {
-  return `<tr><td data-label="المتدرب">${personCell(item)}</td><td data-label="النموذج">${escapeHTML(shortFormTitle(item.formTitle))}</td><td data-label="المدينة">${escapeHTML(answer(item, "city") || "—")}</td><td data-label="الحالة">${statusBadge(item.status)}</td><td data-label="التاريخ">${formatDate(item)}</td><td data-label="الإجراءات" class="response-actions-cell"><div class="quick-row-actions"><button class="compact-view-action" data-details="${item.id}" title="عرض نموذج التسجيل">عرض التسجيل</button><button class="compact-whatsapp-action" data-whatsapp="${item.id}" title="مراسلة المتدرب عبر واتساب">واتساب</button></div></td></tr>`;
+  return `<tr><td data-label="المتدرب">${personCell(item)}</td><td data-label="النموذج">${escapeHTML(shortFormTitle(item.formTitle))}</td><td data-label="المدينة">${escapeHTML(answer(item, "city") || "—")}</td><td data-label="الحالة">${statusMenu(item)}</td><td data-label="التاريخ">${formatDate(item)}</td><td data-label="الإجراءات" class="response-actions-cell"><div class="quick-row-actions"><button class="compact-view-action" data-details="${item.id}" title="عرض نموذج التسجيل">عرض التسجيل</button><button class="compact-whatsapp-action" data-whatsapp="${item.id}" title="إرسال دعوة مجموعة واتساب">إرسال دعوة</button></div></td></tr>`;
 }
 
 function renderFormsList() {
@@ -393,18 +393,16 @@ function responseRow(item) {
   const callAction = /^9665\d{8}$/.test(phone)
     ? `<a class="record-action call-action" href="tel:+${phone}" title="الاتصال بالمتدرب"><span aria-hidden="true">☎</span><span>اتصال</span></a>`
     : `<button class="record-action call-action" type="button" disabled title="لا يوجد رقم صالح"><span aria-hidden="true">☎</span><span>اتصال</span></button>`;
-  return `<tr class="response-record"><td data-label="المتدرب">${personCell(item)}</td><td data-label="الجوال" dir="ltr">${escapeHTML(answer(item, "phone") || "—")}</td><td data-label="النموذج">${escapeHTML(shortFormTitle(item.formTitle))}</td><td data-label="المدينة">${escapeHTML(answer(item, "city") || "—")}</td><td data-label="الحالة">${statusButtons(item)}</td><td data-label="التاريخ">${formatDate(item)}</td><td data-label="الإجراءات" class="response-actions-cell"><div class="row-actions"><button class="record-action details-action" data-details="${item.id}" title="عرض نموذج التسجيل كاملًا"><span aria-hidden="true">▤</span><span>عرض التسجيل</span></button><button class="record-action whatsapp-action" data-whatsapp="${item.id}" title="مراسلة المتدرب عبر واتساب"><span aria-hidden="true">◉</span><span>واتساب</span></button>${callAction}<button class="record-action delete-action" data-delete-response="${item.id}" title="حذف التسجيل"><span aria-hidden="true">⌫</span><span>حذف</span></button></div></td></tr>`;
+  return `<tr class="response-record"><td data-label="المتدرب">${personCell(item)}</td><td data-label="الجوال" dir="ltr">${escapeHTML(answer(item, "phone") || "—")}</td><td data-label="النموذج">${escapeHTML(shortFormTitle(item.formTitle))}</td><td data-label="المدينة">${escapeHTML(answer(item, "city") || "—")}</td><td data-label="الحالة">${statusMenu(item)}</td><td data-label="التاريخ">${formatDate(item)}</td><td data-label="الإجراءات" class="response-actions-cell"><div class="row-actions"><button class="record-action details-action" data-details="${item.id}" title="عرض نموذج التسجيل كاملًا"><span aria-hidden="true">▤</span><span>عرض التسجيل</span></button><button class="record-action whatsapp-action" data-whatsapp="${item.id}" title="إرسال دعوة مجموعة واتساب"><span aria-hidden="true">◉</span><span>إرسال دعوة</span></button>${callAction}<button class="record-action delete-action" data-delete-response="${item.id}" title="حذف التسجيل"><span aria-hidden="true">⌫</span><span>حذف</span></button></div></td></tr>`;
 }
 
 function personCell(item) {
   const name = String(answer(item, "name") || "بدون اسم");
   return `<div class="person"><span class="avatar">${escapeHTML(name.trim().charAt(0) || "؟")}</span><div><b>${escapeHTML(name)}</b><small>${escapeHTML(answer(item, "degree") || "متدرب")}</small></div></div>`;
 }
-function statusBadge(status) { return `<span class="status-select status-${status}">${statusLabels[status] || "جديد"}</span>`; }
-function statusButtons(item) {
-  const invited = ["contacted", "accepted"].includes(item.status);
-  const rejected = item.status === "declined";
-  return `<div class="status-actions" role="group" aria-label="حالة المتدرب"><button class="status-button invited ${invited ? "active" : ""}" data-status-action="contacted" data-response-id="${item.id}" aria-pressed="${invited}"><span aria-hidden="true">✓</span> تمت الدعوة</button><button class="status-button rejected ${rejected ? "active" : ""}" data-status-action="declined" data-response-id="${item.id}" aria-pressed="${rejected}"><span aria-hidden="true">×</span> مرفوض</button></div>`;
+function statusMenu(item) {
+  const current = statusLabels[item.status] ? item.status : "new";
+  return `<label class="status-menu-wrap"><span class="sr-only">تعديل حالة ${escapeHTML(answer(item, "name") || "المتدرب")}</span><select class="status-menu status-${current}" data-status-select="${item.id}" aria-label="تعديل حالة المتدرب">${Object.entries(statusLabels).map(([value, label]) => `<option value="${value}" ${value === current ? "selected" : ""}>${label}</option>`).join("")}</select></label>`;
 }
 
 ["#responseSearch", "#formFilter", "#statusFilter"].forEach(selector => $(selector).addEventListener("input", renderResponses));
@@ -413,23 +411,20 @@ document.addEventListener("click", async event => {
   const whatsapp = event.target.closest("[data-whatsapp]");
   const details = event.target.closest("[data-details]");
   const remove = event.target.closest("[data-delete-response]");
-  const statusAction = event.target.closest("[data-status-action]");
   if (whatsapp) openWhatsapp(whatsapp.dataset.whatsapp);
   if (details) openDetails(details.dataset.details);
   if (remove) await removeResponse(remove.dataset.deleteResponse);
-  if (statusAction) await toggleResponseStatus(statusAction.dataset.responseId, statusAction.dataset.statusAction);
 });
 
-async function toggleResponseStatus(id, targetStatus) {
-  const item = responses.find(response => response.id === id);
-  if (!item) return;
-  const isInvited = targetStatus === "contacted" && ["contacted", "accepted"].includes(item.status);
-  const nextStatus = isInvited || item.status === targetStatus ? "new" : targetStatus;
-  const saved = await changeResponseStatus(id, nextStatus);
+document.addEventListener("change", async event => {
+  const select = event.target.closest("[data-status-select]");
+  if (!select) return;
+  select.disabled = true;
+  const saved = await changeResponseStatus(select.dataset.statusSelect, select.value);
   renderResponses();
-  if (!saved) return;
-  showToast(nextStatus === "contacted" ? "تم تسجيل أن الدعوة أُرسلت." : nextStatus === "declined" ? "تم تسجيل المتدرب كمرفوض." : "عادت الحالة إلى جديد.");
-}
+  select.disabled = false;
+  if (saved) showToast(`تم تغيير الحالة إلى «${statusLabels[select.value]}».`);
+});
 
 async function changeResponseStatus(id, status) {
   const item = responses.find(response => response.id === id);
@@ -479,7 +474,7 @@ function openDetails(id) {
   $("#detailsSummary").innerHTML = `
     <div><small>البرنامج</small><b>${escapeHTML(item.formTitle || "—")}</b></div>
     <div><small>تاريخ التسجيل</small><b>${escapeHTML(formatDate(item))}</b></div>
-    <div><small>حالة المتابعة</small>${statusBadge(item.status)}</div>`;
+    <div><small>حالة المتابعة</small>${statusMenu(item)}</div>`;
   $("#responseDetails").innerHTML = orderedKeys.map((key, index) => {
     const rawValue = answers[key];
     const hasValue = rawValue !== "" && rawValue != null && (!Array.isArray(rawValue) || rawValue.length > 0);
@@ -501,28 +496,22 @@ $("#detailsWhatsappButton").addEventListener("click", event => {
 function openWhatsapp(id) {
   whatsappResponse = responses.find(response => response.id === id);
   if (!whatsappResponse) return;
-  selectedMessageId = messages[0]?.id;
   $("#whatsappRecipient").textContent = `إلى ${answer(whatsappResponse, "name") || "المتدرب"} — ${answer(whatsappResponse, "phone") || "بدون رقم"}`;
-  $("#templateOptions").innerHTML = messages.map((message, index) => `<button class="template-chip ${index === 0 ? "active" : ""}" data-template="${message.id}">${escapeHTML(message.title)}</button>`).join("");
-  hideWhatsappQr();
   applyMessageTemplate();
   $("#whatsappModal").classList.remove("hidden");
 }
 
-$("#templateOptions").addEventListener("click", event => {
-  const button = event.target.closest("[data-template]");
-  if (!button) return;
-  selectedMessageId = button.dataset.template;
-  document.querySelectorAll(".template-chip").forEach(item => item.classList.toggle("active", item === button));
-  applyMessageTemplate();
-});
-
 function applyMessageTemplate() {
-  const template = messages.find(item => item.id === selectedMessageId) || messages[0];
+  const template = invitationTemplate();
   if (!template || !whatsappResponse) return;
   const replacements = { name: answer(whatsappResponse, "name") || "المتدرب", form: whatsappResponse.formTitle || "البرنامج التدريبي", city: answer(whatsappResponse, "city") || "مدينتك" };
   $("#messagePreview").value = template.body.replace(/\{(name|form|city)\}/g, (_, key) => replacements[key]);
-  hideWhatsappQr();
+}
+
+function invitationTemplate() {
+  return messages.find(item => item.id === "group-invite")
+    || DEFAULT_MESSAGES.find(item => item.id === "group-invite")
+    || { id: "group-invite", title: "دعوة مجموعة واتساب", body: "أهلًا {name}، هذه دعوة الانضمام إلى مجموعة {form}:\n\nضع رابط المجموعة هنا" };
 }
 
 function whatsappUrl() {
@@ -532,25 +521,26 @@ function whatsappUrl() {
   return `https://wa.me/${phone}?text=${encodeURIComponent($("#messagePreview").value.trim())}`;
 }
 
-function hideWhatsappQr() {
-  $("#whatsappQrPanel")?.classList.add("hidden");
-  const image = $("#whatsappQrImage");
-  if (image) image.removeAttribute("src");
-}
-
 function closeWhatsappModal() {
   $("#whatsappModal").classList.add("hidden");
-  hideWhatsappQr();
 }
 
 document.querySelectorAll("[data-close-modal]").forEach(button => button.addEventListener("click", closeWhatsappModal));
 $("#whatsappModal").addEventListener("click", event => { if (event.target === event.currentTarget) closeWhatsappModal(); });
-$("#messagePreview").addEventListener("input", hideWhatsappQr);
-$("#showWhatsappQrButton").addEventListener("click", () => {
-  const url = whatsappUrl();
-  if (!url) return showToast("لا يوجد رقم واتساب صالح لهذا المتدرب.");
-  $("#whatsappQrImage").src = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=12&data=${encodeURIComponent(url)}`;
-  $("#whatsappQrPanel").classList.remove("hidden");
+$("#copyWhatsappMessageButton").addEventListener("click", async event => {
+  const text = $("#messagePreview").value.trim();
+  if (!text) return showToast("اكتب نص الدعوة أولًا.");
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    $("#messagePreview").focus();
+    $("#messagePreview").select();
+    document.execCommand("copy");
+  }
+  const button = event.currentTarget;
+  button.textContent = "تم النسخ ✓";
+  showToast("تم نسخ الرسالة كاملة.");
+  setTimeout(() => { button.textContent = "نسخ كامل"; }, 1800);
 });
 $("#sendWhatsappButton").addEventListener("click", () => {
   const url = whatsappUrl();
@@ -560,7 +550,8 @@ $("#sendWhatsappButton").addEventListener("click", () => {
 });
 
 function renderMessages() {
-  $("#messagesList").innerHTML = messages.map((message, index) => `<article class="admin-card message-card" data-message-index="${index}"><div class="message-card-head"><b>قالب ${index + 1}</b><button class="mini-btn" data-delete-message title="حذف">×</button></div><label><span class="field-label">اسم الرسالة</span><input class="field" data-message-field="title" value="${escapeHTML(message.title)}"></label><label><span class="field-label">نص الرسالة</span><textarea class="field" data-message-field="body">${escapeHTML(message.body)}</textarea></label></article>`).join("");
+  const message = invitationTemplate();
+  $("#messagesList").innerHTML = `<article class="admin-card message-card single-message-card" data-message-index="0"><div class="message-card-head"><b>الرسالة الوحيدة المستخدمة عند الإرسال</b></div><label><span class="field-label">اسم الرسالة</span><input class="field" data-message-field="title" value="${escapeHTML(message.title)}"></label><label><span class="field-label">نص دعوة المجموعة</span><textarea class="field" data-message-field="body">${escapeHTML(message.body)}</textarea></label><p class="message-help">استخدم <code>{name}</code> لاسم المتدرب و<code>{form}</code> لاسم البرنامج، وضع رابط مجموعة واتساب داخل النص.</p></article>`;
 }
 
 $("#messagesList").addEventListener("input", event => {
@@ -569,13 +560,6 @@ $("#messagesList").addEventListener("input", event => {
   messages[Number(card.dataset.messageIndex)][event.target.dataset.messageField] = event.target.value;
   $("#messageSaveStatus").textContent = "لديك تعديلات غير محفوظة.";
 });
-$("#messagesList").addEventListener("click", event => {
-  const button = event.target.closest("[data-delete-message]");
-  if (!button) return;
-  messages.splice(Number(button.closest("[data-message-index]").dataset.messageIndex), 1);
-  renderMessages();
-});
-$("#addMessageButton").addEventListener("click", () => { messages.push({ id: createId("message"), title: "رسالة جديدة", body: "مرحبًا {name}، " }); renderMessages(); });
 $("#saveMessagesButton").addEventListener("click", async () => {
   const button = $("#saveMessagesButton"); button.disabled = true; button.textContent = "جاري الحفظ…";
   try { await setDoc(doc(db, "settings", "whatsappMessages"), { items: messages, updatedAt: serverTimestamp() }); $("#messageSaveStatus").textContent = "تم الحفظ."; showToast("تم حفظ رسائل واتساب."); }
@@ -587,7 +571,12 @@ $("#exportButton").addEventListener("click", () => {
   if (!responses.length) return showToast("لا توجد ردود لتصديرها.");
   const fields = ["name", "phone", "age", "degree", "city", "time", "computer", "english", "laptop", "riyadh", "project", "notes"];
   const rows = [["النموذج", ...fields.map(key => FIELD_LABELS[key]), "الحالة", "التاريخ"], ...responses.map(item => [item.formTitle, ...fields.map(key => answer(item, key)), statusLabels[item.status], formatDate(item)])];
-  const csv = "\ufeff" + rows.map(row => row.map(value => `"${String(value || "").replaceAll('"', '""')}"`).join(",")).join("\n");
+  const safeCsvCell = value => {
+    let text = String(value || "");
+    if (/^[\s]*[=+@-]/.test(text)) text = `'${text}`;
+    return `"${text.replaceAll('"', '""')}"`;
+  };
+  const csv = "\ufeff" + rows.map(row => row.map(safeCsvCell).join(",")).join("\n");
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   const link = document.createElement("a"); link.href = url; link.download = `training-responses-${new Date().toISOString().slice(0, 10)}.csv`; link.click(); URL.revokeObjectURL(url);
 });

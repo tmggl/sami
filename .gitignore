@@ -1,6 +1,7 @@
 .DS_Store
 .firebase/
 firebase-debug.log
+firestore-debug.log
 functions/node_modules/
 functions/.secret.local
 .env

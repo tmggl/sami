@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0b1830">
   <title>لوحة إدارة النماذج | سامي الزمزمي</title>
   <link rel="stylesheet" href="assets/forms.css?v=20260827-white-blue-2">
-  <link rel="stylesheet" href="assets/admin.css?v=20260907-mobile-actions-1">
+  <link rel="stylesheet" href="assets/admin.css?v=20260907-simple-status-wa-1">
 </head>
 <body>
   <section class="login-screen" id="loginScreen">
@@ -59,13 +59,13 @@
         <section class="admin-view hidden" id="view-responses">
           <div class="section-heading"><div><h2>ردود المتدربين</h2><p>تابع الدعوات وأرسل رسالة واتساب جاهزة.</p></div><button class="ghost-btn" id="exportButton">تصدير CSV</button></div>
           <div class="admin-card responses-card">
-            <div class="filters"><input class="field" id="responseSearch" type="search" placeholder="ابحث بالاسم أو الجوال أو المدينة…"><select class="field" id="formFilter"><option value="all">كل النماذج</option></select><select class="field" id="statusFilter"><option value="all">كل الحالات</option><option value="new">جديد</option><option value="contacted">تمت الدعوة</option><option value="accepted">مقبول سابقًا</option><option value="declined">مرفوض</option></select></div>
+            <div class="filters"><input class="field" id="responseSearch" type="search" placeholder="ابحث بالاسم أو الجوال أو المدينة…"><select class="field" id="formFilter"><option value="all">كل النماذج</option></select><select class="field" id="statusFilter"><option value="all">كل الحالات</option><option value="new">جديد</option><option value="contacted">تمت الدعوة</option><option value="accepted">مقبول</option><option value="declined">مرفوض</option></select></div>
             <div class="table-wrap responses-wrap"><table class="responses-table"><thead><tr><th>المتدرب</th><th>الجوال</th><th>النموذج</th><th>المدينة</th><th>الحالة</th><th>التاريخ</th><th>الإجراءات</th></tr></thead><tbody id="responseRows"></tbody></table></div><div class="empty-state hidden" id="responsesEmpty">لا توجد نتائج مطابقة.</div>
           </div>
         </section>
 
         <section class="admin-view hidden" id="view-messages">
-          <div class="section-heading"><div><h2>رسائل واتساب الجاهزة</h2><p>استخدم <code>{name}</code> و<code>{form}</code> و<code>{city}</code> لإدخال بيانات المتدرب تلقائيًا.</p></div><button class="primary-btn" id="addMessageButton">+ رسالة جديدة</button></div>
+          <div class="section-heading"><div><h2>رسالة دعوة مجموعة واتساب</h2><p>رسالة واحدة تُستخدم عند دعوة المتدرب، ويمكن تعديلها قبل الإرسال.</p></div></div>
           <div id="messagesList" class="messages-grid"></div><div class="sticky-save"><span id="messageSaveStatus"></span><button class="primary-btn" id="saveMessagesButton">حفظ الرسائل</button></div>
         </section>
       </div>
@@ -81,22 +81,22 @@
   <div class="modal-backdrop hidden" id="whatsappModal" role="dialog" aria-modal="true" aria-labelledby="whatsappTitle">
     <div class="modal-panel whatsapp-panel">
       <button class="modal-close" data-close-modal aria-label="إغلاق">×</button>
-      <span class="modal-kicker">إرسال عبر واتساب</span>
-      <h2 id="whatsappTitle">اختر رسالة جاهزة</h2>
+      <span class="modal-kicker">دعوة مجموعة واتساب</span>
+      <h2 id="whatsappTitle">إرسال دعوة الانضمام</h2>
       <p class="modal-subtitle" id="whatsappRecipient"></p>
-      <div class="template-options" id="templateOptions"></div>
-      <label class="admin-label" for="messagePreview">معاينة الرسالة</label>
-      <textarea class="field message-preview" id="messagePreview"></textarea>
-      <div class="qr-panel hidden" id="whatsappQrPanel">
-        <img id="whatsappQrImage" alt="باركود فتح المحادثة في واتساب">
-        <div><b>افتح المحادثة من الجوال</b><small>امسح الباركود بكاميرا الجوال، وستظهر الرسالة جاهزة للإرسال.</small></div>
+      <div class="whatsapp-message-editor">
+        <div class="message-editor-heading">
+          <label class="admin-label" for="messagePreview">نص الدعوة كاملًا</label>
+          <button class="copy-message-button" id="copyWhatsappMessageButton" type="button">نسخ كامل</button>
+        </div>
+        <textarea class="field message-preview" id="messagePreview" aria-describedby="messageEditHint"></textarea>
+        <p id="messageEditHint">يمكنك تعديل النص أو إضافة رابط المجموعة قبل النسخ أو الإرسال.</p>
       </div>
       <div class="modal-actions whatsapp-actions">
         <button class="ghost-btn" data-close-modal>إلغاء</button>
-        <button class="qr-button" id="showWhatsappQrButton">باركود للجوال</button>
-        <button class="wa-send" id="sendWhatsappButton">إرسال من هذا الجهاز ↗</button>
+        <button class="wa-send" id="sendWhatsappButton">إرسال الدعوة عبر واتساب</button>
       </div>
-      <p class="manual-status-note">بعد التأكد من الإرسال اضغط «تمت الدعوة» من بطاقة المتدرب.</p>
+      <p class="manual-status-note">بعد الإرسال غيّر الحالة مباشرة إلى «تمت الدعوة» من قائمة الحالة.</p>
     </div>
   </div>
   <div class="modal-backdrop hidden" id="detailsModal" role="dialog" aria-modal="true" aria-labelledby="detailsTitle">
@@ -108,11 +108,11 @@
       <div id="responseDetails" class="response-details"></div>
       <div class="details-modal-actions">
         <button class="ghost-btn" data-close-details>إغلاق</button>
-        <button class="wa-send" id="detailsWhatsappButton">مراسلة عبر واتساب</button>
+        <button class="wa-send" id="detailsWhatsappButton">إرسال دعوة واتساب</button>
       </div>
     </div>
   </div>
   <div class="toast" id="toast" role="status"></div>
-  <script type="module" src="assets/admin.js?v=20260907-mobile-actions-1"></script>
+  <script type="module" src="assets/admin.js?v=20260907-simple-status-wa-1"></script>
 </body>
 </html>

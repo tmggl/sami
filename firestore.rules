@@ -16,6 +16,57 @@ service cloud.firestore {
       return isPrimaryAdmin() || isJuniorAdmin();
     }
 
+    function validOptionalString(key, maxLength) {
+      return !(key in request.resource.data.answers)
+        || (request.resource.data.answers[key] is string
+          && request.resource.data.answers[key].size() <= maxLength);
+    }
+
+    function validRegistrationAnswers() {
+      return request.resource.data.answers is map
+        && request.resource.data.answers.keys().hasOnly([
+          'name', 'phone', 'age', 'degree', 'city', 'time', 'computer',
+          'english', 'laptop', 'riyadh', 'project', 'guardian',
+          'experience', 'interest', 'notes'
+        ])
+        && request.resource.data.answers.name is string
+        && request.resource.data.answers.name.size() >= 2
+        && request.resource.data.answers.name.size() <= 120
+        && request.resource.data.answers.phone is string
+        && request.resource.data.answers.phone.size() <= 16
+        && request.resource.data.answers.phone.matches('^([+]966|966|0)?5[0-9]{8}$')
+        && validOptionalString('age', 30)
+        && validOptionalString('degree', 200)
+        && validOptionalString('city', 120)
+        && validOptionalString('time', 200)
+        && validOptionalString('computer', 120)
+        && validOptionalString('english', 120)
+        && validOptionalString('laptop', 120)
+        && validOptionalString('riyadh', 120)
+        && validOptionalString('project', 1000)
+        && validOptionalString('guardian', 200)
+        && validOptionalString('experience', 200)
+        && validOptionalString('notes', 1000)
+        && (!('interest' in request.resource.data.answers)
+          || (request.resource.data.answers.interest is list
+            && request.resource.data.answers.interest.size() <= 4
+            && request.resource.data.answers.interest.toSet().hasOnly([
+              'تصميم الواجهات', 'الألعاب', 'حل التحديات', 'الذكاء الاصطناعي'
+            ])));
+    }
+
+    function validPublishedForm() {
+      return exists(/databases/$(database)/documents/forms/$(request.resource.data.formId))
+        && get(/databases/$(database)/documents/forms/$(request.resource.data.formId)).data.status == 'published';
+    }
+
+    function validStatusUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'statusUpdatedAt'])
+        && request.resource.data.status in ['new', 'contacted', 'accepted', 'declined']
+        && request.resource.data.statusUpdatedAt is timestamp;
+    }
+
     match /forms/{formId} {
       allow read: if true;
       allow create: if isPrimaryAdmin();
@@ -24,20 +75,28 @@ service cloud.firestore {
     }
 
     match /registrations/{registrationId} {
-      allow create: if request.resource.data.keys().hasAll([
+      allow create: if request.resource.data.keys().hasOnly([
           'formId', 'formTitle', 'answers', 'status', 'source', 'createdAtISO'
+          , 'createdAt'
         ])
         && request.resource.data.status == 'new'
         && request.resource.data.source in ['website', 'website-inline']
         && request.resource.data.formId is string
+        && request.resource.data.formId.size() <= 80
         && request.resource.data.formTitle is string
-        && request.resource.data.answers is map;
+        && request.resource.data.formTitle.size() <= 240
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.createdAtISO is string
+        && request.resource.data.createdAtISO.size() <= 40
+        && validPublishedForm()
+        && validRegistrationAnswers();
       allow read, delete: if isPrimaryAdmin()
         || (isJuniorAdmin() && resource.data.formId == 'junior');
-      allow update: if isPrimaryAdmin()
+      allow update: if (isPrimaryAdmin() && validStatusUpdate())
         || (isJuniorAdmin()
           && resource.data.formId == 'junior'
-          && request.resource.data.formId == 'junior');
+          && request.resource.data.formId == 'junior'
+          && validStatusUpdate());
     }
 
     match /settings/{settingId} {
