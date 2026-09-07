@@ -19,6 +19,7 @@
       ".firebase",
       ".firebase/**",
       "firepit-log.txt",
+      "firestore-debug.log",
       "**/.*",
       "**/node_modules/**"
     ],

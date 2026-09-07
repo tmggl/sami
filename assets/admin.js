@@ -145,6 +145,7 @@ function renderAll() {
   renderFormsList();
   renderFormEditor();
   renderFormFilter();
+  renderCityFilter();
   renderResponses();
   renderMessages();
   document.getElementById("addFormButton")?.classList.toggle("hidden", isJuniorAdmin);
@@ -198,7 +199,7 @@ function renderBars(element, items, color) {
 }
 
 function recentRow(item) {
-  return `<tr><td data-label="المتدرب">${personCell(item)}</td><td data-label="النموذج">${escapeHTML(shortFormTitle(item.formTitle))}</td><td data-label="المدينة">${escapeHTML(answer(item, "city") || "—")}</td><td data-label="الحالة">${statusMenu(item)}</td><td data-label="التاريخ">${formatDate(item)}</td><td data-label="الإجراءات" class="response-actions-cell"><div class="quick-row-actions"><button class="compact-view-action" data-details="${item.id}" title="عرض نموذج التسجيل">عرض التسجيل</button><button class="compact-whatsapp-action" data-whatsapp="${item.id}" title="إرسال دعوة مجموعة واتساب">إرسال دعوة</button></div></td></tr>`;
+  return `<tr><td data-label="المتدرب">${personCell(item)}</td><td data-label="النموذج">${escapeHTML(shortFormTitle(item.formTitle))}</td><td data-label="المدينة">${escapeHTML(responseCity(item) || "—")}</td><td data-label="الحالة">${statusMenu(item)}</td><td data-label="التاريخ">${formatDate(item)}</td><td data-label="الإجراءات" class="response-actions-cell"><div class="quick-row-actions"><button class="compact-view-action" data-details="${item.id}" title="عرض نموذج التسجيل">عرض التسجيل</button><button class="compact-whatsapp-action" data-whatsapp="${item.id}" title="إرسال دعوة مجموعة واتساب">إرسال دعوة</button></div></td></tr>`;
 }
 
 function renderFormsList() {
@@ -372,17 +373,34 @@ async function removeSelectedForm() {
 
 function renderFormFilter() {
   const current = $("#formFilter").value;
-  $("#formFilter").innerHTML = `<option value="all">كل النماذج</option>${forms.map(form => `<option value="${escapeHTML(form.id)}">${escapeHTML(form.title)}</option>`).join("")}`;
+  $("#formFilter").innerHTML = `<option value="all">كل الدورات</option>${forms.map(form => `<option value="${escapeHTML(form.id)}">${escapeHTML(form.title)}</option>`).join("")}`;
   $("#formFilter").value = forms.some(item => item.id === current) ? current : "all";
+}
+
+function responseCity(item) {
+  return String(answer(item, "city") || answer(item, "region") || "").trim();
+}
+
+function renderCityFilter() {
+  const select = $("#cityFilter");
+  const current = select.value;
+  const cities = [...new Set(responses.map(responseCity).filter(Boolean))].sort((first, second) => first.localeCompare(second, "ar"));
+  select.innerHTML = `<option value="all">كل المدن والمناطق</option>${cities.map(city => `<option value="${escapeHTML(city)}">${escapeHTML(city)}</option>`).join("")}`;
+  select.value = cities.includes(current) ? current : "all";
 }
 
 function renderResponses() {
   const search = $("#responseSearch").value.trim().toLowerCase();
   const formId = $("#formFilter").value;
   const status = $("#statusFilter").value;
+  const city = $("#cityFilter").value;
   const filtered = responses.filter(item => {
-    const haystack = [answer(item, "name"), answer(item, "phone"), answer(item, "city"), item.formTitle].join(" ").toLowerCase();
-    return (!search || haystack.includes(search)) && (formId === "all" || item.formId === formId) && (status === "all" || item.status === status);
+    const itemCity = responseCity(item);
+    const haystack = [answer(item, "name"), answer(item, "phone"), itemCity, item.formTitle].join(" ").toLowerCase();
+    return (!search || haystack.includes(search))
+      && (formId === "all" || item.formId === formId)
+      && (status === "all" || item.status === status)
+      && (city === "all" || itemCity === city);
   });
   $("#responseRows").innerHTML = filtered.map(responseRow).join("");
   $("#responsesEmpty").classList.toggle("hidden", filtered.length > 0);
@@ -393,7 +411,7 @@ function responseRow(item) {
   const callAction = /^9665\d{8}$/.test(phone)
     ? `<a class="record-action call-action" href="tel:+${phone}" title="الاتصال بالمتدرب"><span aria-hidden="true">☎</span><span>اتصال</span></a>`
     : `<button class="record-action call-action" type="button" disabled title="لا يوجد رقم صالح"><span aria-hidden="true">☎</span><span>اتصال</span></button>`;
-  return `<tr class="response-record"><td data-label="المتدرب">${personCell(item)}</td><td data-label="الجوال" dir="ltr">${escapeHTML(answer(item, "phone") || "—")}</td><td data-label="النموذج">${escapeHTML(shortFormTitle(item.formTitle))}</td><td data-label="المدينة">${escapeHTML(answer(item, "city") || "—")}</td><td data-label="الحالة">${statusMenu(item)}</td><td data-label="التاريخ">${formatDate(item)}</td><td data-label="الإجراءات" class="response-actions-cell"><div class="row-actions"><button class="record-action details-action" data-details="${item.id}" title="عرض نموذج التسجيل كاملًا"><span aria-hidden="true">▤</span><span>عرض التسجيل</span></button><button class="record-action whatsapp-action" data-whatsapp="${item.id}" title="إرسال دعوة مجموعة واتساب"><span aria-hidden="true">◉</span><span>إرسال دعوة</span></button>${callAction}<button class="record-action delete-action" data-delete-response="${item.id}" title="حذف التسجيل"><span aria-hidden="true">⌫</span><span>حذف</span></button></div></td></tr>`;
+  return `<tr class="response-record"><td data-label="المتدرب">${personCell(item)}</td><td data-label="الجوال" dir="ltr">${escapeHTML(answer(item, "phone") || "—")}</td><td data-label="النموذج">${escapeHTML(shortFormTitle(item.formTitle))}</td><td data-label="المدينة">${escapeHTML(responseCity(item) || "—")}</td><td data-label="الحالة">${statusMenu(item)}</td><td data-label="التاريخ">${formatDate(item)}</td><td data-label="الإجراءات" class="response-actions-cell"><div class="row-actions"><button class="record-action details-action" data-details="${item.id}" title="عرض نموذج التسجيل كاملًا"><span aria-hidden="true">▤</span><span>عرض التسجيل</span></button><button class="record-action whatsapp-action" data-whatsapp="${item.id}" title="إرسال دعوة مجموعة واتساب"><span aria-hidden="true">◉</span><span>إرسال دعوة</span></button>${callAction}<button class="record-action delete-action" data-delete-response="${item.id}" title="حذف التسجيل"><span aria-hidden="true">⌫</span><span>حذف</span></button></div></td></tr>`;
 }
 
 function personCell(item) {
@@ -405,7 +423,7 @@ function statusMenu(item) {
   return `<label class="status-menu-wrap"><span class="sr-only">تعديل حالة ${escapeHTML(answer(item, "name") || "المتدرب")}</span><select class="status-menu status-${current}" data-status-select="${item.id}" aria-label="تعديل حالة المتدرب">${Object.entries(statusLabels).map(([value, label]) => `<option value="${value}" ${value === current ? "selected" : ""}>${label}</option>`).join("")}</select></label>`;
 }
 
-["#responseSearch", "#formFilter", "#statusFilter"].forEach(selector => $(selector).addEventListener("input", renderResponses));
+["#responseSearch", "#formFilter", "#statusFilter", "#cityFilter"].forEach(selector => $(selector).addEventListener("input", renderResponses));
 
 document.addEventListener("click", async event => {
   const whatsapp = event.target.closest("[data-whatsapp]");
@@ -456,7 +474,7 @@ async function removeResponse(id) {
     if (!id.startsWith("local-")) await deleteDoc(doc(db, "registrations", id));
     else localStorage.setItem("sami_responses_v1", JSON.stringify(JSON.parse(localStorage.getItem("sami_responses_v1") || "[]").filter(item => item.id !== id)));
     responses = responses.filter(item => item.id !== id);
-    renderOverview(); renderResponses(); $("#navResponseCount").textContent = responses.length; $("#mobileResponseCount").textContent = responses.length;
+    renderOverview(); renderCityFilter(); renderResponses(); $("#navResponseCount").textContent = responses.length; $("#mobileResponseCount").textContent = responses.length;
     showToast("تم حذف الرد.");
   } catch (error) { showToast("تعذر حذف الرد."); }
 }

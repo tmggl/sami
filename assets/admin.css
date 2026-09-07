@@ -98,6 +98,20 @@
 .whatsapp-message-editor .message-preview{min-height:280px;padding:16px;background:#fff;font-size:14px;line-height:2;resize:vertical;white-space:pre-wrap}
 .whatsapp-message-editor>p{margin:8px 2px 0;color:var(--muted);font-size:11px}
 .whatsapp-panel .whatsapp-actions{align-items:stretch}
+
+/* فلاتر الطلبات: بحث وثلاثة اختيارات واضحة */
+.filters{grid-template-columns:minmax(240px,1fr) minmax(175px,220px) minmax(140px,170px) minmax(170px,200px);align-items:end}
+.filter-control{display:grid;gap:5px;min-width:0}
+.filter-control>span{padding-right:3px;color:var(--muted);font-size:10px;font-weight:800}
+.filters .field{width:100%}
+@media(max-width:1050px){
+  .filters{grid-template-columns:1fr 1fr}
+  .filter-search{grid-column:1/-1}
+}
+@media(max-width:520px){
+  .filters{grid-template-columns:1fr}
+  .filter-search{grid-column:auto}
+}
 .whatsapp-panel .whatsapp-actions .wa-send{min-width:260px;min-height:48px}
 .single-message-card{width:min(820px,100%);padding:22px}
 .single-message-card textarea{min-height:260px;line-height:1.9}

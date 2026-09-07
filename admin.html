@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0b1830">
   <title>لوحة إدارة النماذج | سامي الزمزمي</title>
   <link rel="stylesheet" href="assets/forms.css?v=20260827-white-blue-2">
-  <link rel="stylesheet" href="assets/admin.css?v=20260907-simple-status-wa-1">
+  <link rel="stylesheet" href="assets/admin.css?v=20260907-response-filters-1">
 </head>
 <body>
   <section class="login-screen" id="loginScreen">
@@ -59,7 +59,12 @@
         <section class="admin-view hidden" id="view-responses">
           <div class="section-heading"><div><h2>ردود المتدربين</h2><p>تابع الدعوات وأرسل رسالة واتساب جاهزة.</p></div><button class="ghost-btn" id="exportButton">تصدير CSV</button></div>
           <div class="admin-card responses-card">
-            <div class="filters"><input class="field" id="responseSearch" type="search" placeholder="ابحث بالاسم أو الجوال أو المدينة…"><select class="field" id="formFilter"><option value="all">كل النماذج</option></select><select class="field" id="statusFilter"><option value="all">كل الحالات</option><option value="new">جديد</option><option value="contacted">تمت الدعوة</option><option value="accepted">مقبول</option><option value="declined">مرفوض</option></select></div>
+            <div class="filters">
+              <label class="filter-control filter-search"><span>بحث</span><input class="field" id="responseSearch" type="search" placeholder="الاسم أو رقم الجوال…"></label>
+              <label class="filter-control"><span>الدورة</span><select class="field" id="formFilter"><option value="all">كل الدورات</option></select></label>
+              <label class="filter-control"><span>الحالة</span><select class="field" id="statusFilter"><option value="all">كل الحالات</option><option value="new">جديد</option><option value="contacted">تمت الدعوة</option><option value="accepted">مقبول</option><option value="declined">مرفوض</option></select></label>
+              <label class="filter-control"><span>المدينة / المنطقة</span><select class="field" id="cityFilter"><option value="all">كل المدن والمناطق</option></select></label>
+            </div>
             <div class="table-wrap responses-wrap"><table class="responses-table"><thead><tr><th>المتدرب</th><th>الجوال</th><th>النموذج</th><th>المدينة</th><th>الحالة</th><th>التاريخ</th><th>الإجراءات</th></tr></thead><tbody id="responseRows"></tbody></table></div><div class="empty-state hidden" id="responsesEmpty">لا توجد نتائج مطابقة.</div>
           </div>
         </section>
@@ -113,6 +118,6 @@
     </div>
   </div>
   <div class="toast" id="toast" role="status"></div>
-  <script type="module" src="assets/admin.js?v=20260907-simple-status-wa-1"></script>
+  <script type="module" src="assets/admin.js?v=20260907-response-filters-1"></script>
 </body>
 </html>
