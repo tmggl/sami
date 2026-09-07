@@ -17,7 +17,7 @@ service cloud.firestore {
           'formId', 'formTitle', 'answers', 'status', 'source', 'createdAtISO'
         ])
         && request.resource.data.status == 'new'
-        && request.resource.data.source == 'website'
+        && request.resource.data.source in ['website', 'website-inline']
         && request.resource.data.formId is string
         && request.resource.data.formTitle is string
         && request.resource.data.answers is map;

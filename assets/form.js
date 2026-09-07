@@ -182,7 +182,10 @@ async function submitForm(event) {
     const stored = JSON.parse(localStorage.getItem("sami_responses_v1") || "[]");
     stored.push({ ...payload, createdAt: null, id: `local-${Date.now()}` });
     localStorage.setItem("sami_responses_v1", JSON.stringify(stored));
-    showSuccess("تم حفظ طلبك على هذا الجهاز، وسنحاول مزامنته عند توفر الاتصال.");
+    button.disabled = false;
+    button.innerHTML = `${escapeHTML(activeForm.submitLabel || "إرسال الطلب")} <span aria-hidden="true">←</span>`;
+    alertBox.className = "form-alert error";
+    alertBox.textContent = "تعذر تأكيد وصول الطلب الآن. احتفظنا بالبيانات مؤقتًا وسنعيد المحاولة، لكن لا تعتبر التسجيل مكتملًا حتى تظهر رسالة النجاح أو تصلك الرسالة النصية.";
   }
 }
 
@@ -216,7 +219,7 @@ async function syncLocalResponses() {
   for (const item of pending) {
     try {
       const { id, createdAt, ...data } = item;
-      await createRegistration({ ...data, createdAt: new Date(data.createdAtISO || Date.now()) }, 5000);
+      await createRegistration({ ...data, source: "website", createdAt: new Date(data.createdAtISO || Date.now()) }, 5000);
     } catch (error) {
       remaining.push(item);
     }

@@ -265,7 +265,7 @@ async function submitInlineForm(event) {
     answers,
     ...answers,
     status: "new",
-    source: "website-inline",
+    source: "website",
     createdAt: new Date(),
     createdAtISO: new Date().toISOString()
   };
@@ -276,7 +276,10 @@ async function submitInlineForm(event) {
   } catch (error) {
     console.error("تعذر الحفظ السحابي", error);
     saveResponseLocally(payload);
-    showInlineSuccess(formElement, program, answers, "تم حفظ طلبك على هذا الجهاز، وسنحاول مزامنته عند توفر الاتصال.");
+    button.disabled = false;
+    button.innerHTML = `${escapeHTML(program.submitLabel || "إرسال الطلب")} <span aria-hidden="true">←</span>`;
+    alertBox.className = "inline-form-alert error";
+    alertBox.textContent = "تعذر تأكيد وصول الطلب الآن. احتفظنا بالبيانات مؤقتًا وسنعيد المحاولة، لكن لا تعتبر التسجيل مكتملًا حتى تظهر رسالة النجاح أو تصلك الرسالة النصية.";
   }
 }
 
@@ -319,7 +322,7 @@ async function syncLocalResponses() {
   for (const item of pending) {
     try {
       const { id, createdAt, ...data } = item;
-      await createRegistration({ ...data, createdAt: new Date(data.createdAtISO || Date.now()) }, 5000);
+      await createRegistration({ ...data, source: "website", createdAt: new Date(data.createdAtISO || Date.now()) }, 5000);
     } catch (error) {
       remaining.push(item);
     }
