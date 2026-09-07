@@ -408,10 +408,15 @@ function renderResponses() {
 
 function responseRow(item) {
   const phone = normalizePhone(answer(item, "phone"));
+  const age = String(answer(item, "age") || "").trim();
   const callAction = /^9665\d{8}$/.test(phone)
     ? `<a class="record-action call-action" href="tel:+${phone}" title="الاتصال بالمتدرب"><span aria-hidden="true">☎</span><span>اتصال</span></a>`
     : `<button class="record-action call-action" type="button" disabled title="لا يوجد رقم صالح"><span aria-hidden="true">☎</span><span>اتصال</span></button>`;
-  return `<tr class="response-record"><td data-label="المتدرب">${personCell(item)}</td><td data-label="الجوال" dir="ltr">${escapeHTML(answer(item, "phone") || "—")}</td><td data-label="النموذج">${escapeHTML(shortFormTitle(item.formTitle))}</td><td data-label="المدينة">${escapeHTML(responseCity(item) || "—")}</td><td data-label="الحالة">${statusMenu(item)}</td><td data-label="التاريخ">${formatDate(item)}</td><td data-label="الإجراءات" class="response-actions-cell"><div class="row-actions"><button class="record-action details-action" data-details="${item.id}" title="عرض نموذج التسجيل كاملًا"><span aria-hidden="true">▤</span><span>عرض التسجيل</span></button><button class="record-action whatsapp-action" data-whatsapp="${item.id}" title="إرسال دعوة مجموعة واتساب"><span aria-hidden="true">◉</span><span>إرسال دعوة</span></button>${callAction}<button class="record-action delete-action" data-delete-response="${item.id}" title="حذف التسجيل"><span aria-hidden="true">⌫</span><span>حذف</span></button></div></td></tr>`;
+  const quickFields = item.formId === "junior"
+    ? [["العمر", age ? `${age} سنة` : "—"], ["توفر اللابتوب", answer(item, "laptop") || "—"], ["خبرة البرمجة", answer(item, "experience") || "—"]]
+    : [["العمر", age ? `${age} سنة` : "—"], ["إجادة الكمبيوتر", answer(item, "computer") || "—"], ["اللغة الإنجليزية", answer(item, "english") || "—"]];
+  const quickInfo = `<div class="quick-facts">${quickFields.map(([label, value]) => `<span title="${escapeHTML(`${label}: ${value}`)}"><small>${escapeHTML(label)}</small><b>${escapeHTML(value)}</b></span>`).join("")}</div>`;
+  return `<tr class="response-record"><td data-label="المتدرب">${personCell(item)}</td><td data-label="الجوال" dir="ltr">${escapeHTML(answer(item, "phone") || "—")}</td><td data-label="النموذج">${escapeHTML(shortFormTitle(item.formTitle))}</td><td data-label="المدينة">${escapeHTML(responseCity(item) || "—")}</td><td data-label="معلومات سريعة" class="response-quick-info">${quickInfo}</td><td data-label="الحالة">${statusMenu(item)}</td><td data-label="التاريخ">${formatDate(item)}</td><td data-label="الإجراءات" class="response-actions-cell"><div class="row-actions"><button class="record-action details-action" data-details="${item.id}" title="عرض نموذج التسجيل كاملًا"><span aria-hidden="true">▤</span><span>عرض التسجيل</span></button><button class="record-action whatsapp-action" data-whatsapp="${item.id}" title="إرسال دعوة مجموعة واتساب"><span aria-hidden="true">◉</span><span>إرسال دعوة</span></button>${callAction}<button class="record-action delete-action" data-delete-response="${item.id}" title="حذف التسجيل"><span aria-hidden="true">⌫</span><span>حذف</span></button></div></td></tr>`;
 }
 
 function personCell(item) {

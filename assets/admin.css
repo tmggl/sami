@@ -104,6 +104,11 @@
 .filter-control{display:grid;gap:5px;min-width:0}
 .filter-control>span{padding-right:3px;color:var(--muted);font-size:10px;font-weight:800}
 .filters .field{width:100%}
+.quick-facts{display:grid;grid-template-columns:repeat(3,minmax(72px,1fr));gap:5px;min-width:245px}
+.quick-facts>span{display:block;min-width:0;padding:7px 8px;border:1px solid #d7e5f6;border-radius:9px;background:#f7faff}
+.quick-facts small,.quick-facts b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.quick-facts small{min-height:25px;color:var(--muted);font-size:9px;font-weight:700;line-height:1.4;white-space:normal}
+.quick-facts b{margin-top:2px;color:var(--navy-2);font-size:11px}
 @media(max-width:1050px){
   .filters{grid-template-columns:1fr 1fr}
   .filter-search{grid-column:1/-1}
@@ -111,6 +116,14 @@
 @media(max-width:520px){
   .filters{grid-template-columns:1fr}
   .filter-search{grid-column:auto}
+}
+@media(max-width:800px){
+  .responses-table .response-quick-info{display:block;padding:11px;background:#fbfdff}
+  .responses-table .response-quick-info:before{display:block;margin-bottom:8px;color:var(--navy-2)}
+  .quick-facts{min-width:0;width:100%;gap:7px}
+  .quick-facts>span{padding:9px 7px;text-align:center}
+  .quick-facts small{font-size:9px}
+  .quick-facts b{font-size:11px;white-space:normal;overflow-wrap:anywhere}
 }
 .whatsapp-panel .whatsapp-actions .wa-send{min-width:260px;min-height:48px}
 .single-message-card{width:min(820px,100%);padding:22px}
