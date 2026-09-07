@@ -1,4 +1,4 @@
-import { FIREBASE_CONFIG, FIRESTORE_DATABASE, DEFAULT_FORMS, escapeHTML } from "./forms-config.js?v=20260827-project-title-2";
+import { FIREBASE_CONFIG, FIRESTORE_DATABASE, DEFAULT_FORMS, escapeHTML } from "./forms-config.js?v=20260907-inline-forms-3";
 import { decodeFirestoreDocument, encodeFirestoreFields, fetchWithTimeout } from "./firestore-rest.js?v=20260827-mobile-success-1";
 
 const params = new URLSearchParams(location.search);
@@ -13,15 +13,37 @@ let activeForm;
 let formTouched = false;
 let submittedAnswers = {};
 
+const publicFormOverrides = {
+  "in-person": {
+    cardTitle: "دورة برمجة المواقع والأنظمة (حضوري)",
+    title: "طلب الالتحاق بدورة برمجة المواقع والأنظمة (حضوري)",
+    price: 2600,
+    oldPrice: 2800
+  },
+  remote: {
+    cardTitle: "دورة برمجة المواقع والأنظمة (عن بُعد)",
+    title: "طلب الالتحاق بدورة برمجة المواقع والأنظمة (عن بُعد)"
+  },
+  junior: {
+    cardTitle: "معسكر الأشبال",
+    title: "طلب الالتحاق بمعسكر الأشبال"
+  },
+  "in-person-project": { status: "upcoming" }
+};
+
+function applyPublicOverrides(form) {
+  return { ...form, ...(publicFormOverrides[form.id] || {}) };
+}
+
 function localForm() {
-  return DEFAULT_FORMS.find(item => item.id === requestedId) || DEFAULT_FORMS[0];
+  return applyPublicOverrides(DEFAULT_FORMS.find(item => item.id === requestedId) || DEFAULT_FORMS[0]);
 }
 
 async function refreshFormFromCloud() {
   try {
     const response = await fetchWithTimeout(`${firestoreBase}/forms/${encodeURIComponent(requestedId)}?key=${apiKey}`, { cache: "no-store" }, 3000);
     if (!response.ok) throw new Error(`Firestore ${response.status}`);
-    const cloudForm = { id: requestedId, ...decodeFirestoreDocument(await response.json()) };
+    const cloudForm = applyPublicOverrides({ id: requestedId, ...decodeFirestoreDocument(await response.json()) });
     if (!formTouched) {
       activeForm = cloudForm;
       renderForm();
