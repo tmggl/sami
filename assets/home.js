@@ -210,6 +210,11 @@ function toggleProgram(programId, forceOpen) {
 }
 
 programsGrid.addEventListener("click", event => {
+  const resetButton = event.target.closest("[data-program-reset]");
+  if (resetButton) {
+    resetInlineForm(resetButton.dataset.programReset);
+    return;
+  }
   const closeButton = event.target.closest("[data-program-close]");
   if (closeButton) {
     toggleProgram(closeButton.dataset.programClose, false);
@@ -291,9 +296,22 @@ function showInlineSuccess(formElement, program, answers, overrideMessage = "") 
     <h4>${escapeHTML(program.successTitle || "تم استلام طلبك")}</h4>
     <p>${escapeHTML(overrideMessage || program.successMessage || "سنتواصل معك قريبًا عبر واتساب.")}</p>
     ${answers.name ? `<div class="inline-success-name">الطلب باسم: <b>${escapeHTML(answers.name)}</b></div>` : ""}
-    <button class="inline-done" type="button" data-program-close="${escapeHTML(program.id)}">تم</button>
+    <div class="inline-success-actions">
+      <button class="inline-again" type="button" data-program-reset="${escapeHTML(program.id)}">تقديم طلب آخر</button>
+      <button class="inline-done" type="button" data-program-close="${escapeHTML(program.id)}">إغلاق</button>
+    </div>
   </div>`;
   panel.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function resetInlineForm(programId) {
+  const program = displayedPrograms.find(item => item.id === programId);
+  const card = [...programsGrid.querySelectorAll("[data-program-card]")]
+    .find(item => item.dataset.programCard === programId);
+  const panel = card?.querySelector(".program-inline-panel");
+  if (!program || !panel) return;
+  panel.innerHTML = renderInlineForm(program);
+  panel.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function saveResponseLocally(payload) {

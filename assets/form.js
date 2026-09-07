@@ -207,8 +207,16 @@ function showSuccess(overrideMessage = "") {
       <p>${escapeHTML(overrideMessage || activeForm.successMessage || "سنتواصل معك قريبًا عبر واتساب.")}</p>
       <div class="success-summary">${summary.map(([label, value]) => `<div class="success-summary-item"><small>${escapeHTML(label)}</small><b ${label === "الجوال" ? 'dir="ltr"' : ""}>${escapeHTML(Array.isArray(value) ? value.join("، ") : value)}</b></div>`).join("")}</div>
       <div class="success-next"><span aria-hidden="true">◉</span><div><b>الخطوة التالية</b><small>سنراجع الطلب ونتواصل معكم قريبًا عبر واتساب.</small></div></div>
-      <a class="primary-btn" href="index.html">العودة للموقع</a>
+      <button class="primary-btn" id="submitAnotherButton" type="button">تقديم طلب آخر</button>
+      <a class="ghost-btn" href="index.html">العودة للموقع</a>
     </div>`;
+  document.getElementById("submitAnotherButton").addEventListener("click", () => {
+    document.body.classList.remove("submission-complete");
+    submittedAnswers = {};
+    formTouched = false;
+    renderForm();
+    window.scrollTo({ top: 0, behavior: "auto" });
+  });
   window.scrollTo({ top: 0, behavior: "auto" });
 }
 

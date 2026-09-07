@@ -141,6 +141,7 @@ textarea.field { min-height: 110px; resize: vertical; }
 .success-next b { font-size: 11px; }
 .success-next small { font-size: 9px; }
 .submission-success > .primary-btn { width: 100%; min-height: 42px; }
+.submission-success > .ghost-btn { width: 100%; min-height: 42px; margin-top: 8px; }
 
 @media (max-width: 850px) {
   .form-shell { grid-template-columns: 1fr; }
