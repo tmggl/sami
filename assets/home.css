@@ -95,6 +95,9 @@ main { max-width: 1180px; margin: auto; padding: 0 24px; }
 .program-icon { width: 42px; height: 42px; display: grid; place-items: center; flex: 0 0 42px; border: 1px solid var(--line); border-radius: 13px; color: var(--accent); background: var(--blue-soft); font-size: 19px; font-weight: 800; box-shadow: inset 0 -3px 7px rgba(31,99,181,.07); }
 .program-card h3 { margin: 0; color: var(--blue-dark); font-size: 19px; line-height: 1.45; }
 .program-description { min-height: 42px; display: -webkit-box; overflow: hidden; margin: 8px 0 11px; color: var(--muted); font-size: 12px; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.certification-badge { display: flex; align-items: center; gap: 9px; margin: 0 0 11px; padding: 10px 11px; border: 1px solid #9edac4; border-radius: 11px; color: #087652; background: linear-gradient(135deg,#edf9f4,#f7fffb); font-size: 10px; line-height: 1.65; }
+.certification-badge > span { width: 25px; height: 25px; display: grid; place-items: center; flex: 0 0 25px; border-radius: 8px; color: #fff; background: var(--green); font-size: 12px; font-weight: 800; }
+.certification-badge strong { font-weight: 800; }
 .program-price { display: flex; align-items: end; gap: 6px; padding: 11px 0; border-block: 1px solid #dce8f7; }
 .price-number { color: var(--blue-dark); font-size: 31px; font-weight: 800; line-height: 1; letter-spacing: -.03em; }
 .price-currency { width: 24px; height: 27px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 24px; margin: 0 2px 0 0; }

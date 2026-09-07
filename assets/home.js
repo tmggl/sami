@@ -31,11 +31,13 @@ const presentation = {
   "in-person": {
     icon: "⌘", tag: "حضوري (عرض خاص)", className: "in-person",
     image: "assets/programs/in-person-course.jpg", imageAlt: "متدربون ومتدربات سعوديون في قاعة تدريب برمجية",
+    certification: "شهادة معتمدة من المؤسسة العامة للتدريب التقني والمهني (60 ساعة تدريبية)",
     features: ["60 ساعة خلال أسبوعين", "فترات للرجال والسيدات", "مشروع ويب متكامل", "شهادة تدريبية معتمدة"]
   },
   remote: {
-    icon: "◫", tag: "عن بُعد — مباشر", className: "remote",
+    icon: "◫", tag: "عن بُعد (مباشر)", className: "remote",
     image: "assets/programs/remote-course.jpg", imageAlt: "متدرب سعودي يتابع دورة برمجية مباشرة عن بعد",
+    certification: "شهادة معتمدة من المؤسسة العامة للتدريب التقني والمهني (60 ساعة تدريبية)",
     features: ["تدريب مباشر وتفاعلي", "60 ساعة خلال أسبوعين", "من 5 م حتى 10 م", "متابعة أثناء التطبيق"]
   },
   "in-person-project": {
@@ -116,6 +118,7 @@ function renderProgram(program) {
       <div class="program-content">
         <div class="program-heading"><div class="program-icon" aria-hidden="true">${visual.icon}</div><h3>${escapeHTML(program.cardTitle || program.title)}</h3></div>
         <p class="program-description">${escapeHTML(program.cardDescription || program.description || "")}</p>
+        ${visual.certification ? `<div class="certification-badge"><span aria-hidden="true">✓</span><strong>${escapeHTML(visual.certification)}</strong></div>` : ""}
         <div class="program-price" dir="ltr"><span class="price-currency"><img src="assets/saudi-riyal-symbol.svg" alt="ريال سعودي"></span><strong class="price-number">${price}</strong>${oldPrice ? `<span class="previous-price" dir="rtl"><small>سابقًا</small><del dir="ltr">${oldPrice}</del></span>` : ""}<small class="price-note" dir="rtl">${oldPrice ? "سعر العرض" : (isOpen ? "الدفع بعد التأكيد" : "يفتح التسجيل قريبًا")}</small></div>
         <ul class="program-features">${visual.features.map(feature => `<li>${escapeHTML(feature)}</li>`).join("")}</ul>
         <div class="program-actions">
