@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
 import { getFirestore, collection, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
-import { FIREBASE_CONFIG, FIRESTORE_DATABASE, DEFAULT_FORMS, DEFAULT_MESSAGES, FIELD_LABELS, normalizePhone, escapeHTML, createId } from "./forms-config.js?v=20260827-project-title-2";
+import { FIREBASE_CONFIG, FIRESTORE_DATABASE, DEFAULT_FORMS, DEFAULT_MESSAGES, FIELD_LABELS, normalizePhone, escapeHTML, createId } from "./forms-config.js?v=20260908-reminder-copy-2";
 
 const firebaseApp = initializeApp(FIREBASE_CONFIG);
 const auth = getAuth(firebaseApp);
@@ -21,6 +21,10 @@ const loginScreen = $("#loginScreen");
 const adminApp = $("#adminApp");
 const statusLabels = { new: "جديد", contacted: "تمت الدعوة", accepted: "مقبول", declined: "مرفوض" };
 const viewTitles = { overview: "نظرة عامة", forms: "إدارة النماذج", responses: "ردود المتدربين", messages: "رسائل واتساب" };
+const legacyReminderBodies = new Set([
+  "مرحبًا {name}، نذكّرك بقرب موعد {form}. فضلاً تأكد من جاهزية اللابتوب والانضمام إلى المجموعة لمتابعة التعليمات.",
+  "السلام عليكم {name}،\n\nنذكّرك بخصوص {form}.\n\nاكتب تفاصيل التذكير هنا."
+]);
 
 $("#todayLabel").textContent = new Intl.DateTimeFormat("ar-SA-u-nu-latn", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
 
@@ -104,7 +108,23 @@ async function loadDashboard() {
     }
     if (isJuniorAdmin) forms = forms.filter(item => item.id === "junior");
     responses = registrationsSnapshot.docs.map(item => normalizeResponse(item.id, item.data()));
-    if (messagesSnapshot.exists() && Array.isArray(messagesSnapshot.data().items)) messages = messagesSnapshot.data().items;
+    if (messagesSnapshot.exists() && Array.isArray(messagesSnapshot.data().items)) {
+      messages = messagesSnapshot.data().items;
+      const savedReminder = messages.find(item => item.id === "reminder");
+      const currentReminder = DEFAULT_MESSAGES.find(item => item.id === "reminder");
+      let upgradedReminder = false;
+      if (!savedReminder && currentReminder) {
+        messages.push(clone(currentReminder));
+        upgradedReminder = true;
+      } else if (savedReminder && currentReminder && legacyReminderBodies.has(savedReminder.body)) {
+        Object.assign(savedReminder, clone(currentReminder));
+        upgradedReminder = true;
+      }
+      if (upgradedReminder && !isJuniorAdmin) {
+        setDoc(doc(db, "settings", "whatsappMessages"), { items: messages, updatedAt: serverTimestamp() })
+          .catch(error => console.warn("تعذر تحديث نص التذكير الافتراضي سحابيًا", error));
+      }
+    }
   } catch (error) {
     console.error(error);
     showToast("تعذر تحميل بعض البيانات السحابية؛ تُعرض النسخة المتاحة.");
@@ -200,7 +220,7 @@ function renderBars(element, items, color) {
 }
 
 function recentRow(item) {
-  return `<tr><td data-label="المتدرب">${personCell(item)}</td><td data-label="النموذج">${escapeHTML(shortFormTitle(item.formTitle))}</td><td data-label="المدينة">${escapeHTML(responseCity(item) || "—")}</td><td data-label="الحالة">${statusMenu(item)}</td><td data-label="التاريخ">${formatDate(item)}</td><td data-label="الإجراءات" class="response-actions-cell"><div class="quick-row-actions"><button class="compact-view-action" data-details="${item.id}" title="عرض نموذج التسجيل">عرض التسجيل</button><button class="compact-whatsapp-action" data-whatsapp="${item.id}" title="إرسال دعوة مجموعة واتساب">إرسال دعوة</button></div></td></tr>`;
+  return `<tr><td data-label="المتدرب">${personCell(item)}</td><td data-label="النموذج">${escapeHTML(shortFormTitle(item.formTitle))}</td><td data-label="المدينة">${escapeHTML(responseCity(item) || "—")}</td><td data-label="الحالة">${statusMenu(item)}</td><td data-label="التاريخ">${formatDate(item)}</td><td data-label="الإجراءات" class="response-actions-cell"><div class="quick-row-actions"><button class="compact-view-action" data-details="${item.id}" title="عرض نموذج التسجيل">عرض التسجيل</button><button class="compact-whatsapp-action" data-whatsapp="${item.id}" title="إرسال دعوة مجموعة واتساب">إرسال دعوة</button><button class="compact-reminder-action" data-reminder="${item.id}" title="كتابة وإرسال رسالة تذكير">تذكير</button></div></td></tr>`;
 }
 
 function renderFormsList() {
@@ -508,6 +528,7 @@ function openDetails(id) {
     return `<div class="answer-card ${hasValue ? "" : "unanswered"}"><span class="answer-number">${index + 1}</span><div><small>${escapeHTML(labels[key] || FIELD_LABELS[key] || key)}</small><b>${escapeHTML(value)}</b></div></div>`;
   }).join("") || `<div class="empty-state">لا توجد إجابات محفوظة في هذا التسجيل.</div>`;
   $("#detailsWhatsappButton").dataset.responseId = item.id;
+  $("#detailsReminderButton").dataset.responseId = item.id;
   $("#detailsModal").classList.remove("hidden");
 }
 
@@ -516,7 +537,12 @@ $("#detailsModal").addEventListener("click", event => { if (event.target === eve
 $("#detailsWhatsappButton").addEventListener("click", event => {
   const id = event.currentTarget.dataset.responseId;
   $("#detailsModal").classList.add("hidden");
-  openWhatsapp(id);
+  openWhatsapp(id, "invite");
+});
+$("#detailsReminderButton").addEventListener("click", event => {
+  const id = event.currentTarget.dataset.responseId;
+  $("#detailsModal").classList.add("hidden");
+  openWhatsapp(id, "reminder");
 });
 
 function openWhatsapp(id, mode = "invite") {
@@ -551,7 +577,7 @@ function invitationTemplate() {
 function reminderTemplate() {
   return messages.find(item => item.id === "reminder")
     || DEFAULT_MESSAGES.find(item => item.id === "reminder")
-    || { id: "reminder", title: "رسالة تذكير", body: "السلام عليكم {name}،\n\nنذكّرك بخصوص {form}.\n\nاكتب تفاصيل التذكير هنا." };
+    || { id: "reminder", title: "تذكير بالانضمام إلى المجموعة", body: "السلام عليكم {name}،\n\nنود تذكيرك بالانضمام إلى مجموعة {form} عبر الرابط الذي أُرسل لك سابقًا، حيث قاربت المقاعد على الاكتمال.\n\nيُعتمد المقعد بعد إتمام الدفع فعليًا، كما ستُرسل جميع التعليمات والتحديثات الخاصة بالدورة داخل المجموعة.\n\nإذا لم تنضم بعد، نأمل الانضمام في أقرب وقت. ونسعد بانضمامك معنا." };
 }
 
 function whatsappUrl() {
