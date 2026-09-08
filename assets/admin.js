@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
 import { getFirestore, collection, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
-import { FIREBASE_CONFIG, FIRESTORE_DATABASE, DEFAULT_FORMS, DEFAULT_MESSAGES, FIELD_LABELS, normalizePhone, escapeHTML, createId } from "./forms-config.js?v=20260908-reminder-copy-2";
+import { FIREBASE_CONFIG, FIRESTORE_DATABASE, DEFAULT_FORMS, DEFAULT_MESSAGES, FIELD_LABELS, normalizePhone, escapeHTML, createId } from "./forms-config.js?v=20260908-reminder-copy-3";
 
 const firebaseApp = initializeApp(FIREBASE_CONFIG);
 const auth = getAuth(firebaseApp);
@@ -23,7 +23,8 @@ const statusLabels = { new: "جديد", contacted: "تمت الدعوة", accept
 const viewTitles = { overview: "نظرة عامة", forms: "إدارة النماذج", responses: "ردود المتدربين", messages: "رسائل واتساب" };
 const legacyReminderBodies = new Set([
   "مرحبًا {name}، نذكّرك بقرب موعد {form}. فضلاً تأكد من جاهزية اللابتوب والانضمام إلى المجموعة لمتابعة التعليمات.",
-  "السلام عليكم {name}،\n\nنذكّرك بخصوص {form}.\n\nاكتب تفاصيل التذكير هنا."
+  "السلام عليكم {name}،\n\nنذكّرك بخصوص {form}.\n\nاكتب تفاصيل التذكير هنا.",
+  "السلام عليكم {name}،\n\nنود تذكيرك بالانضمام إلى مجموعة {form} عبر الرابط الذي أُرسل لك سابقًا، حيث قاربت المقاعد على الاكتمال.\n\nيُعتمد المقعد بعد إتمام الدفع فعليًا، كما ستُرسل جميع التعليمات والتحديثات الخاصة بالدورة داخل المجموعة.\n\nإذا لم تنضم بعد، نأمل الانضمام في أقرب وقت. ونسعد بانضمامك معنا."
 ]);
 
 $("#todayLabel").textContent = new Intl.DateTimeFormat("ar-SA-u-nu-latn", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
@@ -564,7 +565,8 @@ function openWhatsapp(id, mode = "invite") {
 function applyMessageTemplate() {
   const template = whatsappMode === "reminder" ? reminderTemplate() : invitationTemplate();
   if (!template || !whatsappResponse) return;
-  const replacements = { name: answer(whatsappResponse, "name") || "المتدرب", form: whatsappResponse.formTitle || "البرنامج التدريبي", city: answer(whatsappResponse, "city") || "مدينتك" };
+  const formName = String(whatsappResponse.formTitle || "البرنامج التدريبي").replace(/^طلب الالتحاق ب/, "");
+  const replacements = { name: answer(whatsappResponse, "name") || "المتدرب", form: formName, city: answer(whatsappResponse, "city") || "مدينتك" };
   $("#messagePreview").value = template.body.replace(/\{(name|form|city)\}/g, (_, key) => replacements[key]);
 }
 
@@ -577,7 +579,7 @@ function invitationTemplate() {
 function reminderTemplate() {
   return messages.find(item => item.id === "reminder")
     || DEFAULT_MESSAGES.find(item => item.id === "reminder")
-    || { id: "reminder", title: "تذكير بالانضمام إلى المجموعة", body: "السلام عليكم {name}،\n\nنود تذكيرك بالانضمام إلى مجموعة {form} عبر الرابط الذي أُرسل لك سابقًا، حيث قاربت المقاعد على الاكتمال.\n\nيُعتمد المقعد بعد إتمام الدفع فعليًا، كما ستُرسل جميع التعليمات والتحديثات الخاصة بالدورة داخل المجموعة.\n\nإذا لم تنضم بعد، نأمل الانضمام في أقرب وقت. ونسعد بانضمامك معنا." };
+    || { id: "reminder", title: "تذكير بالانضمام إلى المجموعة", body: "السلام عليكم {name}،\n\nنود تذكيرك بالانضمام إلى مجموعة {form} من خلال الرابط الذي أُرسل لك سابقًا، نظرًا لقرب اكتمال المقاعد المتاحة.\n\nونود التنويه بأن تثبيت المقعد واعتماده يكون بعد إتمام الدفع فعليًا، كما ستُرسل جميع تعليمات الدورة وتحديثاتها داخل المجموعة.\n\nإذا لم تكن قد انضممت بعد، فنأمل الانضمام في أقرب وقت. ويسعدنا وجودك معنا." };
 }
 
 function whatsappUrl() {
