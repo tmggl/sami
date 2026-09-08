@@ -67,6 +67,16 @@ await call("/forms/remote", {
 const valid = await call("/registrations?documentId=valid-registration", { method: "POST", body: registration() });
 assert.equal(valid.status, 200, `valid registration should be accepted (${valid.status})`);
 
+const legacyBody = registration();
+for (const [key, value] of Object.entries(legacyBody.fields.answers.mapValue.fields)) legacyBody.fields[key] = value;
+const validLegacy = await call("/registrations?documentId=valid-legacy-registration", { method: "POST", body: legacyBody });
+assert.equal(validLegacy.status, 200, `legacy mirrored answers should be accepted (${validLegacy.status})`);
+
+const mismatchedLegacyBody = registration();
+mismatchedLegacyBody.fields.name = stringValue("اسم مختلف عن الإجابات");
+const mismatchedLegacy = await call("/registrations?documentId=mismatched-legacy", { method: "POST", body: mismatchedLegacyBody });
+assert.equal(mismatchedLegacy.status, 403, "legacy root fields must exactly match their answer values");
+
 const publicRead = await call("/registrations/valid-registration");
 assert.equal(publicRead.status, 403, "public registration reads must be denied");
 

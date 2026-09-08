@@ -60,6 +60,30 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/forms/$(request.resource.data.formId)).data.status == 'published';
     }
 
+    function validLegacyMirror(key) {
+      return !(key in request.resource.data)
+        || (key in request.resource.data.answers
+          && request.resource.data[key] == request.resource.data.answers[key]);
+    }
+
+    function validLegacyMirrors() {
+      return validLegacyMirror('name')
+        && validLegacyMirror('phone')
+        && validLegacyMirror('age')
+        && validLegacyMirror('degree')
+        && validLegacyMirror('city')
+        && validLegacyMirror('time')
+        && validLegacyMirror('computer')
+        && validLegacyMirror('english')
+        && validLegacyMirror('laptop')
+        && validLegacyMirror('riyadh')
+        && validLegacyMirror('project')
+        && validLegacyMirror('guardian')
+        && validLegacyMirror('experience')
+        && validLegacyMirror('interest')
+        && validLegacyMirror('notes');
+    }
+
     function validStatusUpdate() {
       return request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['status', 'statusUpdatedAt'])
@@ -77,7 +101,9 @@ service cloud.firestore {
     match /registrations/{registrationId} {
       allow create: if request.resource.data.keys().hasOnly([
           'formId', 'formTitle', 'answers', 'status', 'source', 'createdAtISO'
-          , 'createdAt'
+          , 'createdAt', 'name', 'phone', 'age', 'degree', 'city', 'time',
+          'computer', 'english', 'laptop', 'riyadh', 'project', 'guardian',
+          'experience', 'interest', 'notes'
         ])
         && request.resource.data.status == 'new'
         && request.resource.data.source in ['website', 'website-inline']
@@ -88,6 +114,7 @@ service cloud.firestore {
         && request.resource.data.createdAt is timestamp
         && request.resource.data.createdAtISO is string
         && request.resource.data.createdAtISO.size() <= 40
+        && validLegacyMirrors()
         && validPublishedForm()
         && validRegistrationAnswers();
       allow read, delete: if isPrimaryAdmin()
