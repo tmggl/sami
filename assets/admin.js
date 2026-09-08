@@ -13,6 +13,7 @@ let responses = [];
 let messages = clone(DEFAULT_MESSAGES);
 let selectedFormId = forms[0].id;
 let whatsappResponse = null;
+let whatsappMode = "invite";
 let isJuniorAdmin = false;
 
 const $ = selector => document.querySelector(selector);
@@ -114,7 +115,7 @@ async function loadDashboard() {
   responses.push(...localResponses
     .filter(item => !knownIds.has(item.id) && (!isJuniorAdmin || item.formId === "junior"))
     .map(item => normalizeResponse(item.id, item)));
-  messages = [clone(invitationTemplate())];
+  messages = [clone(invitationTemplate()), clone(reminderTemplate())];
   responses.sort((a, b) => responseDate(b) - responseDate(a));
   selectedFormId = forms.some(item => item.id === selectedFormId) ? selectedFormId : forms[0]?.id;
   renderAll();
@@ -416,7 +417,7 @@ function responseRow(item) {
     ? [["العمر", age ? `${age} سنة` : "—"], ["توفر اللابتوب", answer(item, "laptop") || "—"], ["خبرة البرمجة", answer(item, "experience") || "—"]]
     : [["العمر", age ? `${age} سنة` : "—"], ["إجادة الكمبيوتر", answer(item, "computer") || "—"], ["اللغة الإنجليزية", answer(item, "english") || "—"]];
   const quickInfo = `<div class="quick-facts">${quickFields.map(([label, value]) => `<span title="${escapeHTML(`${label}: ${value}`)}"><small>${escapeHTML(label)}</small><b>${escapeHTML(value)}</b></span>`).join("")}</div>`;
-  return `<tr class="response-record"><td data-label="المتدرب">${personCell(item)}</td><td data-label="الجوال" dir="ltr">${escapeHTML(answer(item, "phone") || "—")}</td><td data-label="النموذج">${escapeHTML(shortFormTitle(item.formTitle))}</td><td data-label="المدينة">${escapeHTML(responseCity(item) || "—")}</td><td data-label="معلومات سريعة" class="response-quick-info">${quickInfo}</td><td data-label="الحالة">${statusMenu(item)}</td><td data-label="التاريخ">${formatDate(item)}</td><td data-label="الإجراءات" class="response-actions-cell"><div class="row-actions"><button class="record-action details-action" data-details="${item.id}" title="عرض نموذج التسجيل كاملًا"><span aria-hidden="true">▤</span><span>عرض التسجيل</span></button><button class="record-action whatsapp-action" data-whatsapp="${item.id}" title="إرسال دعوة مجموعة واتساب"><span aria-hidden="true">◉</span><span>إرسال دعوة</span></button>${callAction}<button class="record-action delete-action" data-delete-response="${item.id}" title="حذف التسجيل"><span aria-hidden="true">⌫</span><span>حذف</span></button></div></td></tr>`;
+  return `<tr class="response-record"><td data-label="المتدرب">${personCell(item)}</td><td data-label="الجوال" dir="ltr">${escapeHTML(answer(item, "phone") || "—")}</td><td data-label="النموذج">${escapeHTML(shortFormTitle(item.formTitle))}</td><td data-label="المدينة">${escapeHTML(responseCity(item) || "—")}</td><td data-label="معلومات سريعة" class="response-quick-info">${quickInfo}</td><td data-label="الحالة">${statusMenu(item)}</td><td data-label="التاريخ">${formatDate(item)}</td><td data-label="الإجراءات" class="response-actions-cell"><div class="row-actions"><button class="record-action details-action" data-details="${item.id}" title="عرض نموذج التسجيل كاملًا"><span aria-hidden="true">▤</span><span>عرض التسجيل</span></button><button class="record-action whatsapp-action" data-whatsapp="${item.id}" title="إرسال دعوة مجموعة واتساب"><span aria-hidden="true">◉</span><span>إرسال دعوة</span></button><button class="record-action reminder-action" data-reminder="${item.id}" title="كتابة وإرسال رسالة تذكير"><span aria-hidden="true">⏱</span><span>رسالة تذكير</span></button>${callAction}<button class="record-action delete-action" data-delete-response="${item.id}" title="حذف التسجيل"><span aria-hidden="true">⌫</span><span>حذف</span></button></div></td></tr>`;
 }
 
 function personCell(item) {
@@ -432,9 +433,11 @@ function statusMenu(item) {
 
 document.addEventListener("click", async event => {
   const whatsapp = event.target.closest("[data-whatsapp]");
+  const reminder = event.target.closest("[data-reminder]");
   const details = event.target.closest("[data-details]");
   const remove = event.target.closest("[data-delete-response]");
-  if (whatsapp) openWhatsapp(whatsapp.dataset.whatsapp);
+  if (whatsapp) openWhatsapp(whatsapp.dataset.whatsapp, "invite");
+  if (reminder) openWhatsapp(reminder.dataset.reminder, "reminder");
   if (details) openDetails(details.dataset.details);
   if (remove) await removeResponse(remove.dataset.deleteResponse);
 });
@@ -516,16 +519,24 @@ $("#detailsWhatsappButton").addEventListener("click", event => {
   openWhatsapp(id);
 });
 
-function openWhatsapp(id) {
+function openWhatsapp(id, mode = "invite") {
   whatsappResponse = responses.find(response => response.id === id);
   if (!whatsappResponse) return;
+  whatsappMode = mode;
+  const isReminder = mode === "reminder";
+  $("#whatsappModal .modal-kicker").textContent = isReminder ? "تذكير عبر واتساب" : "دعوة مجموعة واتساب";
+  $("#whatsappTitle").textContent = isReminder ? "إرسال رسالة تذكير" : "إرسال دعوة الانضمام";
+  $(".message-editor-heading label").textContent = isReminder ? "نص التذكير" : "نص الدعوة كاملًا";
+  $("#messageEditHint").textContent = isReminder ? "اكتب أو عدّل نص التذكير بحرية قبل الإرسال." : "يمكنك تعديل النص أو إضافة رابط المجموعة قبل النسخ أو الإرسال.";
+  $("#sendWhatsappButton").textContent = isReminder ? "إرسال التذكير عبر واتساب" : "إرسال الدعوة عبر واتساب";
+  $(".manual-status-note").classList.toggle("hidden", isReminder);
   $("#whatsappRecipient").textContent = `إلى ${answer(whatsappResponse, "name") || "المتدرب"} — ${answer(whatsappResponse, "phone") || "بدون رقم"}`;
   applyMessageTemplate();
   $("#whatsappModal").classList.remove("hidden");
 }
 
 function applyMessageTemplate() {
-  const template = invitationTemplate();
+  const template = whatsappMode === "reminder" ? reminderTemplate() : invitationTemplate();
   if (!template || !whatsappResponse) return;
   const replacements = { name: answer(whatsappResponse, "name") || "المتدرب", form: whatsappResponse.formTitle || "البرنامج التدريبي", city: answer(whatsappResponse, "city") || "مدينتك" };
   $("#messagePreview").value = template.body.replace(/\{(name|form|city)\}/g, (_, key) => replacements[key]);
@@ -535,6 +546,12 @@ function invitationTemplate() {
   return messages.find(item => item.id === "group-invite")
     || DEFAULT_MESSAGES.find(item => item.id === "group-invite")
     || { id: "group-invite", title: "دعوة مجموعة واتساب", body: "أهلًا {name}، هذه دعوة الانضمام إلى مجموعة {form}:\n\nضع رابط المجموعة هنا" };
+}
+
+function reminderTemplate() {
+  return messages.find(item => item.id === "reminder")
+    || DEFAULT_MESSAGES.find(item => item.id === "reminder")
+    || { id: "reminder", title: "رسالة تذكير", body: "السلام عليكم {name}،\n\nنذكّرك بخصوص {form}.\n\nاكتب تفاصيل التذكير هنا." };
 }
 
 function whatsappUrl() {
@@ -552,7 +569,7 @@ document.querySelectorAll("[data-close-modal]").forEach(button => button.addEven
 $("#whatsappModal").addEventListener("click", event => { if (event.target === event.currentTarget) closeWhatsappModal(); });
 $("#copyWhatsappMessageButton").addEventListener("click", async event => {
   const text = $("#messagePreview").value.trim();
-  if (!text) return showToast("اكتب نص الدعوة أولًا.");
+  if (!text) return showToast("اكتب نص الرسالة أولًا.");
   try {
     await navigator.clipboard.writeText(text);
   } catch {
@@ -573,8 +590,10 @@ $("#sendWhatsappButton").addEventListener("click", () => {
 });
 
 function renderMessages() {
-  const message = invitationTemplate();
-  $("#messagesList").innerHTML = `<article class="admin-card message-card single-message-card" data-message-index="0"><div class="message-card-head"><b>الرسالة الوحيدة المستخدمة عند الإرسال</b></div><label><span class="field-label">اسم الرسالة</span><input class="field" data-message-field="title" value="${escapeHTML(message.title)}"></label><label><span class="field-label">نص دعوة المجموعة</span><textarea class="field" data-message-field="body">${escapeHTML(message.body)}</textarea></label><p class="message-help">استخدم <code>{name}</code> لاسم المتدرب و<code>{form}</code> لاسم البرنامج، وضع رابط مجموعة واتساب داخل النص.</p></article>`;
+  $("#messagesList").innerHTML = messages.map((message, index) => {
+    const isReminder = message.id === "reminder";
+    return `<article class="admin-card message-card single-message-card" data-message-index="${index}"><div class="message-card-head"><b>${isReminder ? "رسالة التذكير" : "رسالة دعوة المجموعة"}</b></div><label><span class="field-label">اسم الرسالة</span><input class="field" data-message-field="title" value="${escapeHTML(message.title)}"></label><label><span class="field-label">${isReminder ? "نص التذكير الافتراضي" : "نص دعوة المجموعة"}</span><textarea class="field" data-message-field="body">${escapeHTML(message.body)}</textarea></label><p class="message-help">استخدم <code>{name}</code> لاسم المتدرب و<code>{form}</code> لاسم البرنامج. ويمكن تعديل النص بحرية قبل كل إرسال.</p></article>`;
+  }).join("");
 }
 
 $("#messagesList").addEventListener("input", event => {

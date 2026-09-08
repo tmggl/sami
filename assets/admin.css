@@ -109,6 +109,8 @@
 .quick-facts small,.quick-facts b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .quick-facts small{min-height:25px;color:var(--muted);font-size:9px;font-weight:700;line-height:1.4;white-space:normal}
 .quick-facts b{margin-top:2px;color:var(--navy-2);font-size:11px}
+.reminder-action{grid-column:1/-1;border-color:#efd294;background:#fff9e9;color:#8a5a00}
+.reminder-action:hover{border-color:#d8a83e;background:#fff4cf}
 @media(max-width:1050px){
   .filters{grid-template-columns:1fr 1fr}
   .filter-search{grid-column:1/-1}
