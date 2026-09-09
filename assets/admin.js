@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
 import { getFirestore, collection, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
-import { FIREBASE_CONFIG, FIRESTORE_DATABASE, DEFAULT_FORMS, DEFAULT_MESSAGES, FIELD_LABELS, normalizePhone, escapeHTML, createId } from "./forms-config.js?v=20260909-message-categories-1";
+import { FIREBASE_CONFIG, FIRESTORE_DATABASE, DEFAULT_FORMS, DEFAULT_MESSAGES, FIELD_LABELS, normalizePhone, escapeHTML, createId } from "./forms-config.js?v=20260909-junior-invite-2";
 
 const firebaseApp = initializeApp(FIREBASE_CONFIG);
 const auth = getAuth(firebaseApp);
@@ -15,12 +15,14 @@ let selectedFormId = forms[0].id;
 let whatsappResponse = null;
 let whatsappMode = "invite";
 let isJuniorAdmin = false;
+const messageTemplatesToUpgrade = new Set();
 
 const $ = selector => document.querySelector(selector);
 const loginScreen = $("#loginScreen");
 const adminApp = $("#adminApp");
 const statusLabels = { new: "جديد", contacted: "تمت الدعوة", accepted: "مقبول", declined: "مرفوض" };
 const viewTitles = { overview: "نظرة عامة", forms: "إدارة النماذج", responses: "ردود المتدربين", messages: "رسائل واتساب" };
+const legacyJuniorInviteBody = "السلام عليكم {guardian}،\n\nشكرًا لتسجيل الشبل {name} في {form}. هذه دعوة الانضمام إلى مجموعة أولياء الأمور، وستصلكم من خلالها تفاصيل البرنامج والتعليمات والتحديثات:\n\nضع رابط المجموعة هنا\n\nنسعد بانضمامكم معنا.";
 
 $("#todayLabel").textContent = new Intl.DateTimeFormat("ar-SA-u-nu-latn", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
 
@@ -110,14 +112,13 @@ async function loadDashboard() {
     const legacyMessages = legacyMessagesSnapshot.exists() && Array.isArray(legacyMessagesSnapshot.data().items)
       ? legacyMessagesSnapshot.data().items
       : [];
+    messageTemplatesToUpgrade.clear();
     messages = mergeMessageTemplates(remoteMessages, legacyMessages);
-    if (!isJuniorAdmin) {
-      const remoteIds = new Set(remoteMessages.map(item => item.id));
-      const missingTemplates = messages.filter(item => !remoteIds.has(item.id));
-      if (missingTemplates.length) {
-        Promise.all(missingTemplates.map(template => saveMessageTemplate(template)))
-          .catch(error => console.warn("تعذر إنشاء قوالب رسائل واتساب سحابيًا", error));
-      }
+    const remoteIds = new Set(remoteMessages.map(item => item.id));
+    const templatesToPersist = messages.filter(template => !remoteIds.has(template.id) || messageTemplatesToUpgrade.has(template.id));
+    if (templatesToPersist.length) {
+      Promise.all(templatesToPersist.map(template => saveMessageTemplate(template)))
+        .catch(error => console.warn("تعذر تحديث قوالب رسائل واتساب سحابيًا", error));
     }
   } catch (error) {
     console.error(error);
@@ -145,7 +146,13 @@ function mergeMessageTemplates(remoteMessages, legacyMessages = []) {
       const migrated = clone(defaultTemplate);
       if (!remote && defaultTemplate.id === "in-person" && legacyInvite) migrated.inviteBody = legacyInvite;
       if (!remote && defaultTemplate.id === "in-person" && legacyReminder) migrated.reminderBody = legacyReminder;
-      return remote ? { ...migrated, ...remote, id: defaultTemplate.id } : migrated;
+      const merged = remote ? { ...migrated, ...remote, id: defaultTemplate.id } : migrated;
+      if (remote && defaultTemplate.id === "junior" && remote.inviteBody === legacyJuniorInviteBody) {
+        merged.inviteTitle = defaultTemplate.inviteTitle;
+        merged.inviteBody = defaultTemplate.inviteBody;
+        messageTemplatesToUpgrade.add(defaultTemplate.id);
+      }
+      return merged;
     });
 }
 
