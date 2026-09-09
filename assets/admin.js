@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
 import { getFirestore, collection, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
-import { FIREBASE_CONFIG, FIRESTORE_DATABASE, DEFAULT_FORMS, DEFAULT_MESSAGES, FIELD_LABELS, normalizePhone, escapeHTML, createId } from "./forms-config.js?v=20260908-reminder-copy-3";
+import { FIREBASE_CONFIG, FIRESTORE_DATABASE, DEFAULT_FORMS, DEFAULT_MESSAGES, FIELD_LABELS, normalizePhone, escapeHTML, createId } from "./forms-config.js?v=20260909-message-categories-1";
 
 const firebaseApp = initializeApp(FIREBASE_CONFIG);
 const auth = getAuth(firebaseApp);
@@ -21,11 +21,6 @@ const loginScreen = $("#loginScreen");
 const adminApp = $("#adminApp");
 const statusLabels = { new: "جديد", contacted: "تمت الدعوة", accepted: "مقبول", declined: "مرفوض" };
 const viewTitles = { overview: "نظرة عامة", forms: "إدارة النماذج", responses: "ردود المتدربين", messages: "رسائل واتساب" };
-const legacyReminderBodies = new Set([
-  "مرحبًا {name}، نذكّرك بقرب موعد {form}. فضلاً تأكد من جاهزية اللابتوب والانضمام إلى المجموعة لمتابعة التعليمات.",
-  "السلام عليكم {name}،\n\nنذكّرك بخصوص {form}.\n\nاكتب تفاصيل التذكير هنا.",
-  "السلام عليكم {name}،\n\nنود تذكيرك بالانضمام إلى مجموعة {form} عبر الرابط الذي أُرسل لك سابقًا، حيث قاربت المقاعد على الاكتمال.\n\nيُعتمد المقعد بعد إتمام الدفع فعليًا، كما ستُرسل جميع التعليمات والتحديثات الخاصة بالدورة داخل المجموعة.\n\nإذا لم تنضم بعد، نأمل الانضمام في أقرب وقت. ونسعد بانضمامك معنا."
-]);
 
 $("#todayLabel").textContent = new Intl.DateTimeFormat("ar-SA-u-nu-latn", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
 
@@ -68,7 +63,6 @@ function configureRoleView() {
   const createTopButton = document.querySelector('.top-actions [data-go="forms"]');
   const previewTopLink = document.querySelector(".top-actions a");
   const sidebarFormLink = document.querySelector(".sidebar-footer a");
-  document.querySelectorAll('[data-view="messages"]').forEach(item => item.classList.toggle("hidden", isJuniorAdmin));
   createTopButton?.classList.toggle("hidden", isJuniorAdmin);
   if (previewTopLink) previewTopLink.href = isJuniorAdmin ? "form.html?form=junior" : "form.html?form=in-person";
   if (sidebarFormLink) {
@@ -90,9 +84,13 @@ async function loadDashboard() {
     const registrationsSource = isJuniorAdmin
       ? query(collection(db, "registrations"), where("formId", "==", "junior"))
       : collection(db, "registrations");
-    const [formsSnapshot, registrationsSnapshot, messagesSnapshot, systemSnapshot] = await Promise.all([
+    const templatesRequest = isJuniorAdmin
+      ? getDoc(doc(db, "messageTemplates", "junior")).then(snapshot => snapshot.exists() ? [{ id: snapshot.id, ...snapshot.data() }] : [])
+      : getDocs(collection(db, "messageTemplates")).then(snapshot => snapshot.docs.map(item => ({ id: item.id, ...item.data() })));
+    const [formsSnapshot, registrationsSnapshot, remoteMessages, legacyMessagesSnapshot, systemSnapshot] = await Promise.all([
       getDocs(collection(db, "forms")),
       getDocs(registrationsSource),
+      templatesRequest,
       getDoc(doc(db, "settings", "whatsappMessages")),
       getDoc(doc(db, "settings", "formSystem"))
     ]);
@@ -109,21 +107,16 @@ async function loadDashboard() {
     }
     if (isJuniorAdmin) forms = forms.filter(item => item.id === "junior");
     responses = registrationsSnapshot.docs.map(item => normalizeResponse(item.id, item.data()));
-    if (messagesSnapshot.exists() && Array.isArray(messagesSnapshot.data().items)) {
-      messages = messagesSnapshot.data().items;
-      const savedReminder = messages.find(item => item.id === "reminder");
-      const currentReminder = DEFAULT_MESSAGES.find(item => item.id === "reminder");
-      let upgradedReminder = false;
-      if (!savedReminder && currentReminder) {
-        messages.push(clone(currentReminder));
-        upgradedReminder = true;
-      } else if (savedReminder && currentReminder && legacyReminderBodies.has(savedReminder.body)) {
-        Object.assign(savedReminder, clone(currentReminder));
-        upgradedReminder = true;
-      }
-      if (upgradedReminder && !isJuniorAdmin) {
-        setDoc(doc(db, "settings", "whatsappMessages"), { items: messages, updatedAt: serverTimestamp() })
-          .catch(error => console.warn("تعذر تحديث نص التذكير الافتراضي سحابيًا", error));
+    const legacyMessages = legacyMessagesSnapshot.exists() && Array.isArray(legacyMessagesSnapshot.data().items)
+      ? legacyMessagesSnapshot.data().items
+      : [];
+    messages = mergeMessageTemplates(remoteMessages, legacyMessages);
+    if (!isJuniorAdmin) {
+      const remoteIds = new Set(remoteMessages.map(item => item.id));
+      const missingTemplates = messages.filter(item => !remoteIds.has(item.id));
+      if (missingTemplates.length) {
+        Promise.all(missingTemplates.map(template => saveMessageTemplate(template)))
+          .catch(error => console.warn("تعذر إنشاء قوالب رسائل واتساب سحابيًا", error));
       }
     }
   } catch (error) {
@@ -136,10 +129,40 @@ async function loadDashboard() {
   responses.push(...localResponses
     .filter(item => !knownIds.has(item.id) && (!isJuniorAdmin || item.formId === "junior"))
     .map(item => normalizeResponse(item.id, item)));
-  messages = [clone(invitationTemplate()), clone(reminderTemplate())];
   responses.sort((a, b) => responseDate(b) - responseDate(a));
   selectedFormId = forms.some(item => item.id === selectedFormId) ? selectedFormId : forms[0]?.id;
   renderAll();
+}
+
+function mergeMessageTemplates(remoteMessages, legacyMessages = []) {
+  const allowedIds = isJuniorAdmin ? new Set(["junior"]) : new Set(DEFAULT_MESSAGES.map(item => item.id));
+  const legacyInvite = legacyMessages.find(item => item.id === "group-invite")?.body;
+  const legacyReminder = legacyMessages.find(item => item.id === "reminder")?.body;
+  return DEFAULT_MESSAGES
+    .filter(item => allowedIds.has(item.id))
+    .map(defaultTemplate => {
+      const remote = remoteMessages.find(item => item.id === defaultTemplate.id);
+      const migrated = clone(defaultTemplate);
+      if (!remote && defaultTemplate.id === "in-person" && legacyInvite) migrated.inviteBody = legacyInvite;
+      if (!remote && defaultTemplate.id === "in-person" && legacyReminder) migrated.reminderBody = legacyReminder;
+      return remote ? { ...migrated, ...remote, id: defaultTemplate.id } : migrated;
+    });
+}
+
+function messageTemplateData(template) {
+  return {
+    title: String(template.title || ""),
+    inviteTitle: String(template.inviteTitle || ""),
+    inviteBody: String(template.inviteBody || ""),
+    reminderTitle: String(template.reminderTitle || ""),
+    reminderBody: String(template.reminderBody || ""),
+    updatedAt: serverTimestamp(),
+    updatedBy: auth.currentUser?.uid || "admin"
+  };
+}
+
+function saveMessageTemplate(template) {
+  return setDoc(doc(db, "messageTemplates", template.id), messageTemplateData(template));
 }
 
 function mergeFormsWithDefaults(remoteForms) {
@@ -551,8 +574,9 @@ function openWhatsapp(id, mode = "invite") {
   if (!whatsappResponse) return;
   whatsappMode = mode;
   const isReminder = mode === "reminder";
-  $("#whatsappModal .modal-kicker").textContent = isReminder ? "تذكير عبر واتساب" : "دعوة مجموعة واتساب";
-  $("#whatsappTitle").textContent = isReminder ? "إرسال رسالة تذكير" : "إرسال دعوة الانضمام";
+  const template = messageTemplateForResponse(whatsappResponse);
+  $("#whatsappModal .modal-kicker").textContent = `${template?.title || "الدورة"} — ${isReminder ? "تذكير عبر واتساب" : "دعوة المجموعة"}`;
+  $("#whatsappTitle").textContent = isReminder ? (template?.reminderTitle || "إرسال رسالة تذكير") : (template?.inviteTitle || "إرسال دعوة الانضمام");
   $(".message-editor-heading label").textContent = isReminder ? "نص التذكير" : "نص الدعوة كاملًا";
   $("#messageEditHint").textContent = isReminder ? "اكتب أو عدّل نص التذكير بحرية قبل الإرسال." : "يمكنك تعديل النص أو إضافة رابط المجموعة قبل النسخ أو الإرسال.";
   $("#sendWhatsappButton").textContent = isReminder ? "إرسال التذكير عبر واتساب" : "إرسال الدعوة عبر واتساب";
@@ -563,23 +587,30 @@ function openWhatsapp(id, mode = "invite") {
 }
 
 function applyMessageTemplate() {
-  const template = whatsappMode === "reminder" ? reminderTemplate() : invitationTemplate();
+  const template = messageTemplateForResponse(whatsappResponse);
   if (!template || !whatsappResponse) return;
   const formName = String(whatsappResponse.formTitle || "البرنامج التدريبي").replace(/^طلب الالتحاق ب/, "");
-  const replacements = { name: answer(whatsappResponse, "name") || "المتدرب", form: formName, city: answer(whatsappResponse, "city") || "مدينتك" };
-  $("#messagePreview").value = template.body.replace(/\{(name|form|city)\}/g, (_, key) => replacements[key]);
+  const replacements = {
+    name: answer(whatsappResponse, "name") || "المتدرب",
+    guardian: answer(whatsappResponse, "guardian") || "ولي الأمر",
+    form: formName,
+    city: answer(whatsappResponse, "city") || "مدينتك"
+  };
+  const body = whatsappMode === "reminder" ? template.reminderBody : template.inviteBody;
+  $("#messagePreview").value = String(body || "").replace(/\{(name|guardian|form|city)\}/g, (_, key) => replacements[key]);
 }
 
-function invitationTemplate() {
-  return messages.find(item => item.id === "group-invite")
-    || DEFAULT_MESSAGES.find(item => item.id === "group-invite")
-    || { id: "group-invite", title: "دعوة مجموعة واتساب", body: "أهلًا {name}، هذه دعوة الانضمام إلى مجموعة {form}:\n\nضع رابط المجموعة هنا" };
+function messageCategoryForResponse(response) {
+  if (response?.formId === "junior") return "junior";
+  if (response?.formId === "remote") return "remote";
+  return "in-person";
 }
 
-function reminderTemplate() {
-  return messages.find(item => item.id === "reminder")
-    || DEFAULT_MESSAGES.find(item => item.id === "reminder")
-    || { id: "reminder", title: "تذكير بالانضمام إلى المجموعة", body: "السلام عليكم {name}،\n\nنود تذكيرك بالانضمام إلى مجموعة {form} من خلال الرابط الذي أُرسل لك سابقًا، نظرًا لقرب اكتمال المقاعد المتاحة.\n\nونود التنويه بأن تثبيت المقعد واعتماده يكون بعد إتمام الدفع فعليًا، كما ستُرسل جميع تعليمات الدورة وتحديثاتها داخل المجموعة.\n\nإذا لم تكن قد انضممت بعد، فنأمل الانضمام في أقرب وقت. ويسعدنا وجودك معنا." };
+function messageTemplateForResponse(response) {
+  const categoryId = messageCategoryForResponse(response);
+  return messages.find(item => item.id === categoryId)
+    || DEFAULT_MESSAGES.find(item => item.id === categoryId)
+    || DEFAULT_MESSAGES[0];
 }
 
 function whatsappUrl() {
@@ -618,21 +649,23 @@ $("#sendWhatsappButton").addEventListener("click", () => {
 });
 
 function renderMessages() {
-  $("#messagesList").innerHTML = messages.map((message, index) => {
-    const isReminder = message.id === "reminder";
-    return `<article class="admin-card message-card single-message-card" data-message-index="${index}"><div class="message-card-head"><b>${isReminder ? "رسالة التذكير" : "رسالة دعوة المجموعة"}</b></div><label><span class="field-label">اسم الرسالة</span><input class="field" data-message-field="title" value="${escapeHTML(message.title)}"></label><label><span class="field-label">${isReminder ? "نص التذكير الافتراضي" : "نص دعوة المجموعة"}</span><textarea class="field" data-message-field="body">${escapeHTML(message.body)}</textarea></label><p class="message-help">استخدم <code>{name}</code> لاسم المتدرب و<code>{form}</code> لاسم البرنامج. ويمكن تعديل النص بحرية قبل كل إرسال.</p></article>`;
+  $("#messagesList").classList.toggle("single-template-grid", messages.length === 1);
+  $("#messagesList").innerHTML = messages.map(message => {
+    return `<article class="admin-card message-card category-message-card" data-message-id="${escapeHTML(message.id)}"><div class="message-card-head"><div><b>قالب مستقل</b><h3>${escapeHTML(message.title)}</h3></div><span>${message.id === "junior" ? "الأشبال" : message.id === "remote" ? "عن بُعد" : "حضوري"}</span></div><label><span class="field-label">اسم رسالة الدعوة</span><input class="field" data-message-field="inviteTitle" value="${escapeHTML(message.inviteTitle)}"></label><label><span class="field-label">نص دعوة مجموعة واتساب</span><textarea class="field" data-message-field="inviteBody">${escapeHTML(message.inviteBody)}</textarea></label><label><span class="field-label">اسم رسالة التذكير</span><input class="field" data-message-field="reminderTitle" value="${escapeHTML(message.reminderTitle)}"></label><label><span class="field-label">نص التذكير</span><textarea class="field" data-message-field="reminderBody">${escapeHTML(message.reminderBody)}</textarea></label><p class="message-help">المتغيرات المتاحة: <code>{name}</code> اسم المتدرب، <code>{guardian}</code> ولي الأمر، <code>{form}</code> البرنامج، <code>{city}</code> المدينة. ويمكن تعديل النص أيضًا قبل كل إرسال.</p></article>`;
   }).join("");
 }
 
 $("#messagesList").addEventListener("input", event => {
-  const card = event.target.closest("[data-message-index]");
+  const card = event.target.closest("[data-message-id]");
   if (!card || !event.target.dataset.messageField) return;
-  messages[Number(card.dataset.messageIndex)][event.target.dataset.messageField] = event.target.value;
+  const message = messages.find(item => item.id === card.dataset.messageId);
+  if (!message) return;
+  message[event.target.dataset.messageField] = event.target.value;
   $("#messageSaveStatus").textContent = "لديك تعديلات غير محفوظة.";
 });
 $("#saveMessagesButton").addEventListener("click", async () => {
   const button = $("#saveMessagesButton"); button.disabled = true; button.textContent = "جاري الحفظ…";
-  try { await setDoc(doc(db, "settings", "whatsappMessages"), { items: messages, updatedAt: serverTimestamp() }); $("#messageSaveStatus").textContent = "تم الحفظ."; showToast("تم حفظ رسائل واتساب."); }
+  try { await Promise.all(messages.map(saveMessageTemplate)); $("#messageSaveStatus").textContent = "تم الحفظ."; showToast("تم حفظ رسائل واتساب المتاحة لك."); }
   catch (error) { showToast("تعذر حفظ الرسائل."); }
   finally { button.disabled = false; button.textContent = "حفظ الرسائل"; }
 });

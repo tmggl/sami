@@ -27,6 +27,18 @@ const primaryToken = mockAuthToken("966501424219@admin.sami.local", "primary-adm
 const juniorToken = mockAuthToken("966555967209@admin.sami.local", "junior-admin-test");
 
 const stringValue = value => ({ stringValue: value });
+const messageTemplate = (updatedBy, overrides = {}) => ({
+  fields: {
+    title: stringValue("قالب الرسالة"),
+    inviteTitle: stringValue("دعوة المجموعة"),
+    inviteBody: stringValue("مرحبًا {name}"),
+    reminderTitle: stringValue("رسالة تذكير"),
+    reminderBody: stringValue("تذكير إلى {name}"),
+    updatedAt: { timestampValue: new Date().toISOString() },
+    updatedBy: stringValue(updatedBy),
+    ...overrides,
+  },
+});
 const registration = (overrides = {}) => ({
   fields: {
     formId: stringValue("junior"),
@@ -102,6 +114,42 @@ assert.equal(juniorRemoteRead.status, 403, "junior admin must not read other reg
 
 const primaryRemoteRead = await call("/registrations/remote-registration", { token: primaryToken });
 assert.equal(primaryRemoteRead.status, 200, "primary admin must read registrations");
+
+const juniorMessageWrite = await call("/messageTemplates/junior", {
+  method: "PATCH",
+  token: juniorToken,
+  body: messageTemplate("junior-admin-test"),
+});
+assert.equal(juniorMessageWrite.status, 200, "junior admin must edit the junior WhatsApp template");
+
+await call("/messageTemplates/remote", {
+  method: "PATCH",
+  admin: true,
+  body: messageTemplate("primary-admin-test"),
+});
+const juniorRemoteMessageRead = await call("/messageTemplates/remote", { token: juniorToken });
+assert.equal(juniorRemoteMessageRead.status, 403, "junior admin must not read another course template");
+
+const juniorRemoteMessageWrite = await call("/messageTemplates/remote", {
+  method: "PATCH",
+  token: juniorToken,
+  body: messageTemplate("junior-admin-test"),
+});
+assert.equal(juniorRemoteMessageWrite.status, 403, "junior admin must not edit another course template");
+
+const primaryRemoteMessageWrite = await call("/messageTemplates/remote", {
+  method: "PATCH",
+  token: primaryToken,
+  body: messageTemplate("primary-admin-test"),
+});
+assert.equal(primaryRemoteMessageWrite.status, 200, "primary admin must edit all WhatsApp templates");
+
+const invalidJuniorMessageWrite = await call("/messageTemplates/junior", {
+  method: "PATCH",
+  token: juniorToken,
+  body: messageTemplate("junior-admin-test", { unexpected: stringValue("not allowed") }),
+});
+assert.equal(invalidJuniorMessageWrite.status, 403, "message templates must reject unexpected fields");
 
 const juniorStatusUpdate = await call("/registrations/valid-registration?updateMask.fieldPaths=status&updateMask.fieldPaths=statusUpdatedAt", {
   method: "PATCH",

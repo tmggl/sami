@@ -131,6 +131,31 @@ service cloud.firestore {
       allow write: if isPrimaryAdmin();
     }
 
+    match /messageTemplates/{templateId} {
+      allow read: if isPrimaryAdmin()
+        || (isJuniorAdmin() && templateId == 'junior');
+      allow create, update: if (isPrimaryAdmin()
+          || (isJuniorAdmin() && templateId == 'junior'))
+        && templateId in ['in-person', 'remote', 'junior']
+        && request.resource.data.keys().hasOnly([
+          'title', 'inviteTitle', 'inviteBody', 'reminderTitle',
+          'reminderBody', 'updatedAt', 'updatedBy'
+        ])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 120
+        && request.resource.data.inviteTitle is string
+        && request.resource.data.inviteTitle.size() <= 160
+        && request.resource.data.inviteBody is string
+        && request.resource.data.inviteBody.size() <= 5000
+        && request.resource.data.reminderTitle is string
+        && request.resource.data.reminderTitle.size() <= 160
+        && request.resource.data.reminderBody is string
+        && request.resource.data.reminderBody.size() <= 5000
+        && request.resource.data.updatedAt is timestamp
+        && request.resource.data.updatedBy == request.auth.uid;
+      allow delete: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
