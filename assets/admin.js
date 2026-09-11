@@ -658,6 +658,19 @@ function finalWhatsappMessage() {
   return composeTemplateBody($("#messagePreview").value, {}, groupUrl);
 }
 
+function copyTextFallback(text) {
+  const field = document.createElement("textarea");
+  field.value = text;
+  field.setAttribute("readonly", "");
+  field.style.position = "fixed";
+  field.style.opacity = "0";
+  document.body.appendChild(field);
+  field.select();
+  const copied = document.execCommand("copy");
+  field.remove();
+  if (!copied) throw new Error("copy failed");
+}
+
 function closeWhatsappModal() {
   $("#whatsappModal").classList.add("hidden");
 }
@@ -670,9 +683,8 @@ $("#copyWhatsappMessageButton").addEventListener("click", async event => {
   try {
     await navigator.clipboard.writeText(text);
   } catch {
-    $("#messagePreview").focus();
-    $("#messagePreview").select();
-    document.execCommand("copy");
+    try { copyTextFallback(text); }
+    catch { return showToast("تعذر النسخ؛ استخدم زر الإرسال عبر واتساب."); }
   }
   const button = event.currentTarget;
   button.textContent = "تم النسخ ✓";
