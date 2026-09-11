@@ -3,6 +3,7 @@
 firebase-debug.log
 firestore-debug.log
 functions/node_modules/
+node_modules/
 functions/.secret.local
 .env
 .env.*

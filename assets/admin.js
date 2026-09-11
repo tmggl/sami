@@ -1,11 +1,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
-import { getFirestore, collection, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
-import { FIREBASE_CONFIG, FIRESTORE_DATABASE, DEFAULT_FORMS, DEFAULT_MESSAGES, FIELD_LABELS, normalizePhone, escapeHTML, createId } from "./forms-config.js?v=20260909-junior-invite-2";
+import { FIREBASE_CONFIG, DEFAULT_FORMS, DEFAULT_MESSAGES, FIELD_LABELS, normalizePhone, escapeHTML, createId } from "./forms-config.js?v=20260911-postgres-1";
 
 const firebaseApp = initializeApp(FIREBASE_CONFIG);
 const auth = getAuth(firebaseApp);
-const db = getFirestore(firebaseApp, FIRESTORE_DATABASE);
 const clone = value => JSON.parse(JSON.stringify(value));
 
 let forms = clone(DEFAULT_FORMS);
@@ -81,39 +79,38 @@ function friendlyAuthError(code = "") {
   return "تعذر تسجيل الدخول. تحقق من البيانات وحاول مرة أخرى.";
 }
 
+async function adminApi(path, options = {}) {
+  const user = auth.currentUser;
+  if (!user) throw new Error("يلزم تسجيل الدخول.");
+  const token = await user.getIdToken();
+  const response = await fetch(path, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...(options.headers || {})
+    },
+    body: options.body && typeof options.body !== "string" ? JSON.stringify(options.body) : options.body,
+    cache: "no-store"
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    if (response.status === 401) await signOut(auth);
+    throw new Error(data.error || "تعذر الاتصال بالخادم.");
+  }
+  return data;
+}
+
 async function loadDashboard() {
   try {
-    const registrationsSource = isJuniorAdmin
-      ? query(collection(db, "registrations"), where("formId", "==", "junior"))
-      : collection(db, "registrations");
-    const templatesRequest = isJuniorAdmin
-      ? getDoc(doc(db, "messageTemplates", "junior")).then(snapshot => snapshot.exists() ? [{ id: snapshot.id, ...snapshot.data() }] : [])
-      : getDocs(collection(db, "messageTemplates")).then(snapshot => snapshot.docs.map(item => ({ id: item.id, ...item.data() })));
-    const [formsSnapshot, registrationsSnapshot, remoteMessages, legacyMessagesSnapshot, systemSnapshot] = await Promise.all([
-      getDocs(collection(db, "forms")),
-      getDocs(registrationsSource),
-      templatesRequest,
-      getDoc(doc(db, "settings", "whatsappMessages")),
-      getDoc(doc(db, "settings", "formSystem"))
-    ]);
-
-    const remoteForms = formsSnapshot.docs.map(item => ({ id: item.id, ...item.data() }));
-    if (!systemSnapshot.exists() && remoteForms.length === 0) {
-      forms = clone(DEFAULT_FORMS);
-      Promise.all([
-        ...forms.map(({ id, ...data }) => setDoc(doc(db, "forms", id), data)),
-        setDoc(doc(db, "settings", "formSystem"), { initialized: true, initializedAt: serverTimestamp() })
-      ]).catch(error => console.warn("تعذر إنشاء النماذج الافتراضية سحابيًا", error));
-    } else {
-      forms = mergeFormsWithDefaults(remoteForms);
-    }
+    const dashboard = await adminApi("/api/admin/dashboard");
+    const remoteForms = Array.isArray(dashboard.forms) ? dashboard.forms : [];
+    forms = mergeFormsWithDefaults(remoteForms);
     if (isJuniorAdmin) forms = forms.filter(item => item.id === "junior");
-    responses = registrationsSnapshot.docs.map(item => normalizeResponse(item.id, item.data()));
-    const legacyMessages = legacyMessagesSnapshot.exists() && Array.isArray(legacyMessagesSnapshot.data().items)
-      ? legacyMessagesSnapshot.data().items
-      : [];
+    responses = (dashboard.registrations || []).map(item => normalizeResponse(item.id, item));
     messageTemplatesToUpgrade.clear();
-    messages = mergeMessageTemplates(remoteMessages, legacyMessages);
+    const remoteMessages = Array.isArray(dashboard.messageTemplates) ? dashboard.messageTemplates : [];
+    messages = mergeMessageTemplates(remoteMessages);
     const remoteIds = new Set(remoteMessages.map(item => item.id));
     const templatesToPersist = messages.filter(template => !remoteIds.has(template.id) || messageTemplatesToUpgrade.has(template.id));
     if (templatesToPersist.length) {
@@ -125,11 +122,6 @@ async function loadDashboard() {
     showToast("تعذر تحميل بعض البيانات السحابية؛ تُعرض النسخة المتاحة.");
   }
 
-  const localResponses = JSON.parse(localStorage.getItem("sami_responses_v1") || "[]");
-  const knownIds = new Set(responses.map(item => item.id));
-  responses.push(...localResponses
-    .filter(item => !knownIds.has(item.id) && (!isJuniorAdmin || item.formId === "junior"))
-    .map(item => normalizeResponse(item.id, item)));
   responses.sort((a, b) => responseDate(b) - responseDate(a));
   selectedFormId = forms.some(item => item.id === selectedFormId) ? selectedFormId : forms[0]?.id;
   renderAll();
@@ -162,14 +154,15 @@ function messageTemplateData(template) {
     inviteTitle: String(template.inviteTitle || ""),
     inviteBody: String(template.inviteBody || ""),
     reminderTitle: String(template.reminderTitle || ""),
-    reminderBody: String(template.reminderBody || ""),
-    updatedAt: serverTimestamp(),
-    updatedBy: auth.currentUser?.uid || "admin"
+    reminderBody: String(template.reminderBody || "")
   };
 }
 
 function saveMessageTemplate(template) {
-  return setDoc(doc(db, "messageTemplates", template.id), messageTemplateData(template));
+  return adminApi(`/api/admin/message-templates/${encodeURIComponent(template.id)}`, {
+    method: "PUT",
+    body: messageTemplateData(template)
+  });
 }
 
 function mergeFormsWithDefaults(remoteForms) {
@@ -397,14 +390,15 @@ async function saveSelectedForm() {
   button.textContent = "جاري الحفظ…";
   try {
     const { id, ...data } = form;
-    await setDoc(doc(db, "forms", id), { ...data, updatedAt: serverTimestamp() }, { merge: true });
+    const result = await adminApi(`/api/admin/forms/${encodeURIComponent(id)}`, { method: "PUT", body: data });
+    Object.assign(form, result.item || {});
     $("#formSaveStatus").textContent = "تم الحفظ والنشر بنجاح.";
     showToast("تم حفظ النموذج.");
     renderFormsList();
     renderFormFilter();
   } catch (error) {
     console.error(error);
-    showToast("تعذر حفظ النموذج. تحقق من صلاحيات Firebase.");
+    showToast(error.message || "تعذر حفظ النموذج.");
   } finally {
     button.disabled = false;
     button.textContent = "حفظ النموذج";
@@ -415,7 +409,7 @@ async function removeSelectedForm() {
   const form = selectedForm();
   if (!confirm(`حذف نموذج «${form.title}»؟ لن تُحذف الردود السابقة.`)) return;
   try {
-    await setDoc(doc(db, "forms", form.id), { status: "deleted", deletedAt: serverTimestamp() }, { merge: true });
+    await adminApi(`/api/admin/forms/${encodeURIComponent(form.id)}`, { method: "DELETE" });
     forms = forms.filter(item => item.id !== form.id);
     selectedFormId = forms[0]?.id || "";
     renderFormsList(); renderFormEditor(); renderFormFilter();
@@ -509,14 +503,7 @@ async function changeResponseStatus(id, status) {
   const previousStatus = item.status;
   item.status = status;
   try {
-    if (!id.startsWith("local-")) {
-      await updateDoc(doc(db, "registrations", id), { status, statusUpdatedAt: serverTimestamp() });
-    } else {
-      const localItems = JSON.parse(localStorage.getItem("sami_responses_v1") || "[]");
-      const localItem = localItems.find(response => response.id === id);
-      if (localItem) localItem.status = status;
-      localStorage.setItem("sami_responses_v1", JSON.stringify(localItems));
-    }
+    await adminApi(`/api/admin/registrations/${encodeURIComponent(id)}/status`, { method: "PATCH", body: { status } });
   } catch (error) {
     item.status = previousStatus;
     renderOverview();
@@ -530,8 +517,7 @@ async function changeResponseStatus(id, status) {
 async function removeResponse(id) {
   if (!confirm("هل تريد حذف هذا الرد نهائيًا؟")) return;
   try {
-    if (!id.startsWith("local-")) await deleteDoc(doc(db, "registrations", id));
-    else localStorage.setItem("sami_responses_v1", JSON.stringify(JSON.parse(localStorage.getItem("sami_responses_v1") || "[]").filter(item => item.id !== id)));
+    await adminApi(`/api/admin/registrations/${encodeURIComponent(id)}`, { method: "DELETE" });
     responses = responses.filter(item => item.id !== id);
     renderOverview(); renderCityFilter(); renderResponses(); $("#navResponseCount").textContent = responses.length; $("#mobileResponseCount").textContent = responses.length;
     showToast("تم حذف الرد.");

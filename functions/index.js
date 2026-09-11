@@ -15,6 +15,8 @@ const MSEGAT_SENDER_NAME = defineSecret("MSEGAT_SENDER_NAME");
 const ADMIN_NOTIFICATION_PHONE = defineSecret("ADMIN_NOTIFICATION_PHONE");
 const JUNIOR_ADMIN_NOTIFICATION_PHONE = defineSecret("JUNIOR_ADMIN_NOTIFICATION_PHONE");
 const ADMIN_PANEL_URL = defineSecret("ADMIN_PANEL_URL");
+const POSTGRES_API_URL = defineSecret("POSTGRES_API_URL");
+const POSTGRES_BRIDGE_SECRET = defineSecret("POSTGRES_BRIDGE_SECRET");
 
 exports.notifyAdminOnRegistration = onDocumentCreated({
   document: "registrations/{registrationId}",
@@ -103,4 +105,30 @@ exports.notifyAdminOnRegistration = onDocumentCreated({
 
   if (failedCount) logger.error("One or more registration SMS messages failed", { registrationId: event.params.registrationId, failedCount });
   else logger.info("Registration SMS messages completed", { registrationId: event.params.registrationId, registrantSent: Boolean(registrantPhone) });
+});
+
+exports.bridgeRegistrationToPostgres = onDocumentCreated({
+  document: "registrations/{registrationId}",
+  database: "sami-training",
+  region: "europe-west3",
+  retry: true,
+  secrets: [POSTGRES_API_URL, POSTGRES_BRIDGE_SECRET],
+}, async event => {
+  const data = event.data?.data();
+  if (!data) return;
+  const createdAt = data.createdAt?.toDate?.().toISOString?.() || data.createdAtISO || event.data.createTime?.toDate?.().toISOString?.();
+  const response = await fetch(`${POSTGRES_API_URL.value().replace(/\/$/, "")}/api/internal/firestore-registration`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-bridge-secret": POSTGRES_BRIDGE_SECRET.value()
+    },
+    body: JSON.stringify({
+      id: event.params.registrationId,
+      data: { ...data, createdAt }
+    }),
+    signal: AbortSignal.timeout(12_000)
+  });
+  if (!response.ok) throw new Error(`Postgres bridge rejected registration (${response.status})`);
+  logger.info("Registration copied to Postgres", { registrationId: event.params.registrationId });
 });

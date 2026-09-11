@@ -1,11 +1,8 @@
-import { FIREBASE_CONFIG, FIRESTORE_DATABASE, DEFAULT_FORMS, escapeHTML } from "./forms-config.js?v=20260907-inline-forms-3";
-import { decodeFirestoreDocument, encodeFirestoreFields, fetchWithTimeout } from "./firestore-rest.js?v=20260827-mobile-success-1";
+import { DEFAULT_FORMS, escapeHTML } from "./forms-config.js?v=20260911-postgres-1";
+import { fetchWithTimeout } from "./firestore-rest.js?v=20260911-api-1";
 
 const params = new URLSearchParams(location.search);
 const requestedId = params.get("form") || "in-person";
-const firestoreBase = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/${FIRESTORE_DATABASE}/documents`;
-const apiKey = encodeURIComponent(FIREBASE_CONFIG.apiKey);
-
 const hero = document.getElementById("formHero");
 const container = document.getElementById("formContainer");
 const detailsCard = document.getElementById("detailsCard");
@@ -41,9 +38,10 @@ function localForm() {
 
 async function refreshFormFromCloud() {
   try {
-    const response = await fetchWithTimeout(`${firestoreBase}/forms/${encodeURIComponent(requestedId)}?key=${apiKey}`, { cache: "no-store" }, 3000);
-    if (!response.ok) throw new Error(`Firestore ${response.status}`);
-    const cloudForm = applyPublicOverrides({ id: requestedId, ...decodeFirestoreDocument(await response.json()) });
+    const response = await fetchWithTimeout(`/api/forms/${encodeURIComponent(requestedId)}`, { cache: "no-store" }, 3000);
+    if (!response.ok) throw new Error(`API ${response.status}`);
+    const result = await response.json();
+    const cloudForm = applyPublicOverrides(result.item);
     if (!formTouched) {
       activeForm = cloudForm;
       renderForm();
@@ -113,7 +111,8 @@ function renderQuestion(question, index) {
   const requiredMark = question.required ? `<span class="required" aria-label="مطلوب"> *</span>` : "";
   const id = escapeHTML(question.id || `question-${index + 1}`);
   const label = `<div class="question-head"><label class="question-label" for="${id}">${escapeHTML(question.label)}${requiredMark}</label></div>`;
-  const help = question.help ? `<p class="help">${escapeHTML(question.help)}</p>` : "";
+  const helpText = question.type === "tel" ? "يجب أن يبدأ الرقم بـ 05 ويتكون من 10 أرقام." : question.help;
+  const help = helpText ? `<p class="help">${escapeHTML(helpText)}</p>` : "";
   const placeholder = escapeHTML(question.placeholder || "");
   let input = "";
 
@@ -129,8 +128,8 @@ function renderQuestion(question, index) {
     input = `<textarea class="field" id="${id}" name="${id}" placeholder="${placeholder}" maxlength="1000" ${required}></textarea>`;
   } else {
     const type = ["text", "tel", "number", "email", "date"].includes(question.type) ? question.type : "text";
-    const phoneAttrs = type === "tel" ? `inputmode="tel" pattern="(?:\\+?966|0)?5[0-9]{8}"` : "";
-    const lengthAttrs = type === "tel" ? `maxlength="16"` : ["text", "email"].includes(type) ? `maxlength="200"` : "";
+    const phoneAttrs = type === "tel" ? `inputmode="numeric" autocomplete="tel" pattern="05[0-9]{8}" minlength="10" maxlength="10"` : "";
+    const lengthAttrs = ["text", "email"].includes(type) ? `maxlength="200"` : "";
     const min = question.min !== undefined ? `min="${Number(question.min)}"` : "";
     const max = question.max !== undefined ? `max="${Number(question.max)}"` : "";
     input = `<input class="field" id="${id}" name="${id}" type="${type}" placeholder="${placeholder}" ${phoneAttrs} ${lengthAttrs} ${min} ${max} ${required}>`;
@@ -145,10 +144,15 @@ async function submitForm(event) {
   const alertBox = document.getElementById("formAlert");
   const button = document.getElementById("submitButton");
 
+  const phoneInput = formElement.querySelector('input[type="tel"]');
+  if (phoneInput) enforceLocalPhone(phoneInput);
+
   if (!formElement.checkValidity()) {
     formElement.reportValidity();
     alertBox.className = "form-alert error";
-    alertBox.textContent = "يرجى إكمال الحقول المطلوبة والتأكد من صحة رقم الجوال.";
+    alertBox.textContent = phoneInput && !/^05[0-9]{8}$/.test(phoneInput.value)
+      ? "رقم الجوال يجب أن يبدأ بـ 05 ويتكون من 10 أرقام."
+      : "يرجى إكمال جميع الحقول المطلوبة.";
     return;
   }
 
@@ -166,26 +170,22 @@ async function submitForm(event) {
 
   const payload = {
     formId: activeForm.id,
-    formTitle: activeForm.title,
     answers,
-    status: "new",
-    source: "website",
-    createdAt: new Date(),
-    createdAtISO: new Date().toISOString()
+    clientRequestId: createRequestId()
   };
 
   try {
     await createRegistration(payload);
     showSuccess();
   } catch (error) {
-    console.error("تعذر الحفظ السحابي", error);
+    console.error("تعذر حفظ التسجيل", error);
     const stored = JSON.parse(localStorage.getItem("sami_responses_v1") || "[]");
-    stored.push({ ...payload, createdAt: null, id: `local-${Date.now()}` });
+    stored.push({ ...payload, id: `local-${Date.now()}` });
     localStorage.setItem("sami_responses_v1", JSON.stringify(stored));
     button.disabled = false;
     button.innerHTML = `${escapeHTML(activeForm.submitLabel || "إرسال الطلب")} <span aria-hidden="true">←</span>`;
     alertBox.className = "form-alert error";
-    alertBox.textContent = "تعذر تأكيد وصول الطلب الآن. احتفظنا بالبيانات مؤقتًا وسنعيد المحاولة، لكن لا تعتبر التسجيل مكتملًا حتى تظهر رسالة النجاح أو تصلك الرسالة النصية.";
+    alertBox.textContent = error.userMessage || "تعذر تأكيد وصول الطلب الآن. احتفظنا بالبيانات مؤقتًا وسنعيد المحاولة، لكن لا تعتبر التسجيل مكتملًا حتى تظهر رسالة النجاح.";
   }
 }
 
@@ -225,15 +225,14 @@ async function syncLocalResponses() {
   if (!pending.length) return;
   const remaining = [];
   for (const item of pending) {
+    item.clientRequestId ||= createRequestId();
+    const answers = { ...(item.answers || {}) };
+    answers.phone = toLocalPhone(answers.phone);
     try {
       await createRegistration({
         formId: item.formId,
-        formTitle: item.formTitle,
-        answers: item.answers || {},
-        status: "new",
-        source: "website",
-        createdAt: new Date(),
-        createdAtISO: item.createdAtISO || new Date().toISOString()
+        answers,
+        clientRequestId: item.clientRequestId
       }, 5000);
     } catch (error) {
       remaining.push(item);
@@ -243,17 +242,49 @@ async function syncLocalResponses() {
 }
 
 async function createRegistration(payload, timeout = 9000) {
-  const response = await fetchWithTimeout(`${firestoreBase}/registrations?key=${apiKey}`, {
+  const response = await fetchWithTimeout("/api/registrations", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fields: encodeFirestoreFields(payload) }),
+    body: JSON.stringify(payload),
     keepalive: true
   }, timeout);
-  if (!response.ok) throw new Error(`Firestore ${response.status}: ${await response.text()}`);
-  return response.json();
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(`API ${response.status}`);
+    error.userMessage = result.error || "تعذر حفظ الطلب. حاول مرة أخرى.";
+    throw error;
+  }
+  return result;
 }
 
-container.addEventListener("input", () => { formTouched = true; }, { once: true });
+function createRequestId() {
+  return globalThis.crypto?.randomUUID?.() || `request-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
+function enforceLocalPhone(input) {
+  const arabicDigits = "٠١٢٣٤٥٦٧٨٩";
+  const easternDigits = "۰۱۲۳۴۵۶۷۸۹";
+  const normalized = String(input.value)
+    .replace(/[٠-٩]/g, digit => String(arabicDigits.indexOf(digit)))
+    .replace(/[۰-۹]/g, digit => String(easternDigits.indexOf(digit)))
+    .replace(/\D/g, "")
+    .slice(0, 10);
+  input.value = normalized;
+  input.setCustomValidity(!normalized || /^05[0-9]{8}$/.test(normalized) ? "" : "رقم الجوال يجب أن يبدأ بـ 05 ويتكون من 10 أرقام.");
+}
+
+function toLocalPhone(value) {
+  let digits = String(value || "").replace(/\D/g, "");
+  if (digits.startsWith("00966")) digits = digits.slice(2);
+  if (/^9665[0-9]{8}$/.test(digits)) return `0${digits.slice(3)}`;
+  if (/^5[0-9]{8}$/.test(digits)) return `0${digits}`;
+  return digits;
+}
+
+container.addEventListener("input", event => {
+  formTouched = true;
+  if (event.target.matches('input[type="tel"]')) enforceLocalPhone(event.target);
+});
 activeForm = localForm();
 renderForm();
 setTimeout(refreshFormFromCloud, 0);

@@ -1,0 +1,21 @@
+{
+  "name": "sami-training-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22 <25"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "check": "node --check server/index.js && node --check server/db.js && node --check server/validation.js && node --check server/auth.js && node --check server/notifications.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "helmet": "^8.1.0",
+    "jose": "^6.1.0",
+    "pg": "^8.16.3"
+  }
+}
