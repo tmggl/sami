@@ -133,10 +133,26 @@ export function validateFormInput(id, body) {
   };
 }
 
+export function normalizeWhatsAppGroupUrl(value) {
+  let url;
+  try {
+    url = new URL(String(value || "").trim());
+  } catch {
+    throw new ValidationError("رابط مجموعة واتساب غير صحيح.", "groupUrl");
+  }
+  const inviteCode = url.pathname.match(/^\/([a-zA-Z0-9_-]{10,80})\/?$/)?.[1] || "";
+  if (url.protocol !== "https:" || url.hostname.toLowerCase() !== "chat.whatsapp.com" || !inviteCode) {
+    throw new ValidationError("استخدم رابط دعوة رسمي يبدأ بـ https://chat.whatsapp.com/", "groupUrl");
+  }
+  return `https://chat.whatsapp.com/${inviteCode}`;
+}
+
 export function validateMessageTemplate(id, body) {
   if (!["in-person", "remote", "junior"].includes(id)) throw new ValidationError("تصنيف الرسالة غير صحيح.");
   return {
     title: text(String(body.title || ""), 120, "title", true),
+    groupUrl: normalizeWhatsAppGroupUrl(body.groupUrl),
+    smsGroupLinkEnabled: body.smsGroupLinkEnabled === undefined ? true : body.smsGroupLinkEnabled === true,
     inviteTitle: text(String(body.inviteTitle || ""), 160, "inviteTitle", true),
     inviteBody: text(String(body.inviteBody || ""), 5000, "inviteBody", true),
     reminderTitle: text(String(body.reminderTitle || ""), 160, "reminderTitle", true),

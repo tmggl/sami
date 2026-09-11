@@ -121,14 +121,33 @@ app.post("/api/registrations", registrationLimiter, async (req, res, next) => {
   }
 });
 
+function hasLegacyBridgeAccess(req) {
+  const configuredSecret = process.env.LEGACY_BRIDGE_SECRET || "";
+  const providedSecret = req.get("x-bridge-secret") || "";
+  return Boolean(configuredSecret && providedSecret
+    && configuredSecret.length === providedSecret.length
+    && crypto.timingSafeEqual(Buffer.from(configuredSecret), Buffer.from(providedSecret)));
+}
+
+app.get("/api/internal/message-settings/:formId", async (req, res, next) => {
+  try {
+    if (!hasLegacyBridgeAccess(req)) return res.status(401).json({ error: "غير مصرح." });
+    const categoryId = req.params.formId === "junior" ? "junior" : req.params.formId === "remote" ? "remote" : "in-person";
+    const result = await pool.query("SELECT data FROM message_templates WHERE id = $1", [categoryId]);
+    if (!result.rowCount) return res.status(404).json({ error: "إعداد الرسالة غير موجود." });
+    const data = result.rows[0].data || {};
+    res.json({
+      groupUrl: String(data.groupUrl || ""),
+      smsGroupLinkEnabled: data.smsGroupLinkEnabled !== false
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.post("/api/internal/firestore-registration", async (req, res, next) => {
   try {
-    const configuredSecret = process.env.LEGACY_BRIDGE_SECRET || "";
-    const providedSecret = req.get("x-bridge-secret") || "";
-    const secretsMatch = configuredSecret && providedSecret
-      && configuredSecret.length === providedSecret.length
-      && crypto.timingSafeEqual(Buffer.from(configuredSecret), Buffer.from(providedSecret));
-    if (!secretsMatch) return res.status(401).json({ error: "غير مصرح." });
+    if (!hasLegacyBridgeAccess(req)) return res.status(401).json({ error: "غير مصرح." });
     const id = String(req.body?.id || "");
     const data = req.body?.data;
     if (!/^[a-zA-Z0-9_-]{2,160}$/.test(id) || !data || typeof data !== "object" || Array.isArray(data)) {

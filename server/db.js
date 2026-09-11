@@ -98,6 +98,22 @@ export async function initializeDatabase(pool) {
         "INSERT INTO message_templates (id, data, updated_by) VALUES ($1, $2::jsonb, 'system') ON CONFLICT (id) DO NOTHING",
         [id, JSON.stringify(data)]
       );
+      await client.query(
+        `UPDATE message_templates
+         SET data = jsonb_set(
+           jsonb_set(data, '{groupUrl}', to_jsonb($2::text)),
+           '{smsGroupLinkEnabled}',
+           COALESCE(data->'smsGroupLinkEnabled', 'true'::jsonb)
+         ), updated_at = NOW()
+         WHERE id = $1 AND COALESCE(data->>'groupUrl', '') = ''`,
+        [id, template.groupUrl]
+      );
+      await client.query(
+        `UPDATE message_templates
+         SET data = jsonb_set(data, '{smsGroupLinkEnabled}', 'true'::jsonb), updated_at = NOW()
+         WHERE id = $1 AND NOT (data ? 'smsGroupLinkEnabled')`,
+        [id]
+      );
     }
     await client.query("COMMIT");
   } catch (error) {

@@ -46,9 +46,17 @@ async function claimJob(pool) {
   try {
     await client.query("BEGIN");
     const result = await client.query(`
-      SELECT j.id AS job_id, j.attempts AS job_attempts, j.result AS job_result, r.*
+      SELECT j.id AS job_id, j.attempts AS job_attempts, j.result AS job_result,
+             mt.data->>'groupUrl' AS group_url,
+             CASE WHEN mt.data->>'smsGroupLinkEnabled' = 'false' THEN false ELSE true END AS sms_group_link_enabled,
+             r.*
       FROM notification_jobs j
       JOIN registrations r ON r.id = j.registration_id
+      LEFT JOIN message_templates mt ON mt.id = CASE
+        WHEN r.form_id = 'junior' THEN 'junior'
+        WHEN r.form_id = 'remote' THEN 'remote'
+        ELSE 'in-person'
+      END
       WHERE j.completed_at IS NULL AND (
         (j.status IN ('pending', 'partial', 'failed') AND j.next_attempt_at <= NOW())
         OR (j.status = 'processing' AND j.locked_at < NOW() - INTERVAL '5 minutes')
@@ -96,7 +104,11 @@ async function deliverJob(pool, job) {
     jobs.push({ key: "juniorAdminSms", phone: config.juniorAdminPhone, message: buildNotificationMessage(data, config.adminUrl) });
   }
   const registrantPhone = normalizeSaudiMobile(job.answers?.phone);
-  if (registrantPhone) jobs.push({ key: "registrantSms", phone: registrantPhone, message: buildRegistrantConfirmationMessage() });
+  if (registrantPhone) jobs.push({
+    key: "registrantSms",
+    phone: registrantPhone,
+    message: buildRegistrantConfirmationMessage(data, job.sms_group_link_enabled ? job.group_url : "")
+  });
 
   const previousOutcome = job.job_result && typeof job.job_result === "object" ? job.job_result : {};
   const pendingJobs = jobs.filter(item => previousOutcome[item.key]?.status !== "sent");

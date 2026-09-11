@@ -18,11 +18,29 @@ const ADMIN_PANEL_URL = defineSecret("ADMIN_PANEL_URL");
 const POSTGRES_API_URL = defineSecret("POSTGRES_API_URL");
 const POSTGRES_BRIDGE_SECRET = defineSecret("POSTGRES_BRIDGE_SECRET");
 
+async function registrationMessageSettings(formId) {
+  try {
+    const response = await fetch(`${POSTGRES_API_URL.value().replace(/\/$/, "")}/api/internal/message-settings/${encodeURIComponent(formId || "in-person")}`, {
+      headers: { "x-bridge-secret": POSTGRES_BRIDGE_SECRET.value() },
+      signal: AbortSignal.timeout(8_000)
+    });
+    if (!response.ok) throw new Error(`message settings HTTP ${response.status}`);
+    const result = await response.json();
+    return {
+      groupUrl: String(result.groupUrl || ""),
+      smsGroupLinkEnabled: result.smsGroupLinkEnabled !== false
+    };
+  } catch (error) {
+    logger.warn("Could not load registration message settings; sending confirmation without a group link", { error: error.message });
+    return { groupUrl: "", smsGroupLinkEnabled: false };
+  }
+}
+
 exports.notifyAdminOnRegistration = onDocumentCreated({
   document: "registrations/{registrationId}",
   database: "sami-training",
   region: "europe-west3",
-  secrets: [MSEGAT_USERNAME, MSEGAT_API_KEY, MSEGAT_SENDER_NAME, ADMIN_NOTIFICATION_PHONE, JUNIOR_ADMIN_NOTIFICATION_PHONE, ADMIN_PANEL_URL],
+  secrets: [MSEGAT_USERNAME, MSEGAT_API_KEY, MSEGAT_SENDER_NAME, ADMIN_NOTIFICATION_PHONE, JUNIOR_ADMIN_NOTIFICATION_PHONE, ADMIN_PANEL_URL, POSTGRES_API_URL, POSTGRES_BRIDGE_SECRET],
 }, async event => {
   const data = event.data?.data();
   if (!data) return;
@@ -44,6 +62,7 @@ exports.notifyAdminOnRegistration = onDocumentCreated({
 
   const answers = data.answers || {};
   const registrantPhone = normalizeSaudiMobile(answers.phone || data.phone);
+  const messageSettings = registrantPhone ? await registrationMessageSettings(data.formId) : { groupUrl: "", smsGroupLinkEnabled: false };
   const smsJobs = [{
     key: "adminSms",
     promise: sendMsegatSms({
@@ -76,7 +95,7 @@ exports.notifyAdminOnRegistration = onDocumentCreated({
         apiKey: MSEGAT_API_KEY.value(),
         sender: MSEGAT_SENDER_NAME.value(),
         phone: registrantPhone,
-        message: buildRegistrantConfirmationMessage(),
+        message: buildRegistrantConfirmationMessage(data, messageSettings.smsGroupLinkEnabled ? messageSettings.groupUrl : ""),
       }),
     });
   }

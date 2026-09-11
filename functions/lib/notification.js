@@ -18,8 +18,22 @@ function buildNotificationMessage(data, adminUrl) {
   ].filter(Boolean).join("\n");
 }
 
-function buildRegistrantConfirmationMessage() {
-  return "تم استلام طلب انضمامك. سنتواصل معكم قريبًا عبر واتساب.";
+function normalizeWhatsAppGroupUrl(value = "") {
+  try {
+    const url = new URL(String(value).trim());
+    const inviteCode = url.pathname.match(/^\/([a-zA-Z0-9_-]{10,80})\/?$/)?.[1] || "";
+    if (url.protocol !== "https:" || url.hostname.toLowerCase() !== "chat.whatsapp.com" || !inviteCode) return "";
+    return `https://chat.whatsapp.com/${inviteCode}`;
+  } catch {
+    return "";
+  }
+}
+
+function buildRegistrantConfirmationMessage(data = {}, groupUrl = "") {
+  const form = cleanText(data.formTitle || data.formId || "البرنامج التدريبي", 70).replace(/^طلب الالتحاق ب/, "");
+  const link = normalizeWhatsAppGroupUrl(groupUrl);
+  if (!link) return `تم استلام طلبك في ${form}. سنتواصل معك قريبًا عبر واتساب.`;
+  return `تم استلام طلبك في ${form}.\nلحجز مقعدك مؤقتًا، انضم إلى مجموعة واتساب:\n${link}`;
 }
 
 function normalizeSaudiMobile(value = "") {
@@ -55,4 +69,4 @@ async function sendMsegatSms({ username, apiKey, sender, phone, message }) {
   return { id: String(result.id || ""), code };
 }
 
-module.exports = { cleanText, buildNotificationMessage, buildRegistrantConfirmationMessage, normalizeSaudiMobile, sendMsegatSms };
+module.exports = { cleanText, buildNotificationMessage, buildRegistrantConfirmationMessage, normalizeSaudiMobile, normalizeWhatsAppGroupUrl, sendMsegatSms };

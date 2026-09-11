@@ -141,6 +141,7 @@
 .category-message-card .message-card-head>span{padding:5px 10px;border-radius:99px;background:var(--blue-soft);color:var(--blue);font-size:11px;font-weight:800}
 .category-message-card textarea{min-height:210px;line-height:1.9;resize:vertical}
 .category-message-card code{direction:ltr;display:inline-block;padding:1px 4px;border-radius:4px;background:#edf5ff;color:#174f96}
+.message-field-help{display:block;margin-top:6px;color:var(--muted);font-size:11px;line-height:1.7}.sms-link-toggle{display:flex!important;align-items:flex-start;gap:11px;padding:12px 13px;border:1px solid #b9d8f7;border-radius:13px;background:#f2f8ff;cursor:pointer}.sms-link-toggle input{width:21px;height:21px;flex:0 0 auto;margin:1px 0 0;accent-color:var(--blue)}.sms-link-toggle span{display:grid;gap:3px}.sms-link-toggle b{color:var(--navy-2);font-size:13px}.sms-link-toggle small{color:var(--muted);font-size:11px;line-height:1.6}
 .messages-grid.single-template-grid{grid-template-columns:minmax(0,820px)}
 
 @media(max-width:800px){

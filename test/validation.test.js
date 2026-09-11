@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { DEFAULT_FORMS } from "../assets/forms-config.js";
-import { validateRegistrationInput, validateSaudiLocalPhone, ValidationError } from "../server/validation.js";
+import { normalizeWhatsAppGroupUrl, validateMessageTemplate, validateRegistrationInput, validateSaudiLocalPhone, ValidationError } from "../server/validation.js";
 
 test("accepts only a ten-digit Saudi mobile beginning with 05", () => {
   assert.equal(validateSaudiLocalPhone("0501234567"), "0501234567");
@@ -33,4 +33,25 @@ test("rejects unexpected answer fields and closed forms", () => {
     answers: { name: "سامي محمد", phone: "0501234567", injected: "no" }
   }, form), /غير مسموح/);
   assert.throws(() => validateRegistrationInput({ formId: "closed", answers: {}, clientRequestId: "12345678-1234-1234-1234-123456789012" }, { ...form, id: "closed", status: "upcoming" }), /غير متاح/);
+});
+
+test("validates and shortens the official WhatsApp group link", () => {
+  assert.equal(
+    normalizeWhatsAppGroupUrl("https://chat.whatsapp.com/AbCdEfGhIjKlMnOpQrStUv?mode=gi_t"),
+    "https://chat.whatsapp.com/AbCdEfGhIjKlMnOpQrStUv"
+  );
+  assert.throws(() => normalizeWhatsAppGroupUrl("https://example.com/group"), ValidationError);
+});
+
+test("keeps the SMS group-link switch enabled by default and allows disabling it", () => {
+  const base = {
+    title: "عن بُعد",
+    groupUrl: "https://chat.whatsapp.com/AbCdEfGhIjKlMnOpQrStUv?mode=gi_t",
+    inviteTitle: "دعوة",
+    inviteBody: "مرحبًا {name}",
+    reminderTitle: "تذكير",
+    reminderBody: "نذكرك بالانضمام"
+  };
+  assert.equal(validateMessageTemplate("remote", base).smsGroupLinkEnabled, true);
+  assert.equal(validateMessageTemplate("remote", { ...base, smsGroupLinkEnabled: false }).smsGroupLinkEnabled, false);
 });

@@ -1,10 +1,41 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
-import { FIREBASE_CONFIG, DEFAULT_FORMS, DEFAULT_MESSAGES, FIELD_LABELS, normalizePhone, escapeHTML, createId } from "./forms-config.js?v=20260911-postgres-1";
+import { FIREBASE_CONFIG, DEFAULT_FORMS, DEFAULT_MESSAGES, FIELD_LABELS, normalizePhone, escapeHTML, createId } from "./forms-config.js?v=20260911-group-links-1";
 
 const firebaseApp = initializeApp(FIREBASE_CONFIG);
 const auth = getAuth(firebaseApp);
 const clone = value => JSON.parse(JSON.stringify(value));
+const whatsappGroupUrlPattern = /https:\/\/chat\.whatsapp\.com\/[^\s]+/gi;
+
+function normalizeWhatsAppGroupUrl(value = "") {
+  try {
+    const url = new URL(String(value).trim());
+    const inviteCode = url.pathname.match(/^\/([a-zA-Z0-9_-]{10,80})\/?$/)?.[1] || "";
+    if (url.protocol !== "https:" || url.hostname.toLowerCase() !== "chat.whatsapp.com" || !inviteCode) return "";
+    return `https://chat.whatsapp.com/${inviteCode}`;
+  } catch {
+    return "";
+  }
+}
+
+function groupUrlFromBody(body = "") {
+  const match = String(body).match(whatsappGroupUrlPattern)?.[0] || "";
+  return normalizeWhatsAppGroupUrl(match.replace(/[)\]}>.,،؛]+$/, ""));
+}
+
+function stripGroupUrlFromBody(body = "") {
+  return String(body)
+    .replace(whatsappGroupUrlPattern, "")
+    .replaceAll("{groupUrl}", "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function composeTemplateBody(body, replacements, groupUrl) {
+  let message = stripGroupUrlFromBody(body).replace(/\{(name|guardian|form|city)\}/g, (_, key) => replacements[key] || "");
+  if (groupUrl) message = `${message.trim()}\n\nرابط الانضمام إلى المجموعة:\n${groupUrl}`;
+  return message.trim();
+}
 
 let forms = clone(DEFAULT_FORMS);
 let responses = [];
@@ -144,6 +175,10 @@ function mergeMessageTemplates(remoteMessages, legacyMessages = []) {
         merged.inviteBody = defaultTemplate.inviteBody;
         messageTemplatesToUpgrade.add(defaultTemplate.id);
       }
+      merged.groupUrl = normalizeWhatsAppGroupUrl(merged.groupUrl || groupUrlFromBody(merged.inviteBody) || defaultTemplate.groupUrl);
+      merged.smsGroupLinkEnabled = merged.smsGroupLinkEnabled !== false;
+      merged.inviteBody = stripGroupUrlFromBody(merged.inviteBody);
+      merged.reminderBody = stripGroupUrlFromBody(merged.reminderBody);
       return merged;
     });
 }
@@ -151,18 +186,22 @@ function mergeMessageTemplates(remoteMessages, legacyMessages = []) {
 function messageTemplateData(template) {
   return {
     title: String(template.title || ""),
+    groupUrl: normalizeWhatsAppGroupUrl(template.groupUrl),
+    smsGroupLinkEnabled: template.smsGroupLinkEnabled !== false,
     inviteTitle: String(template.inviteTitle || ""),
-    inviteBody: String(template.inviteBody || ""),
+    inviteBody: stripGroupUrlFromBody(template.inviteBody),
     reminderTitle: String(template.reminderTitle || ""),
-    reminderBody: String(template.reminderBody || "")
+    reminderBody: stripGroupUrlFromBody(template.reminderBody)
   };
 }
 
-function saveMessageTemplate(template) {
-  return adminApi(`/api/admin/message-templates/${encodeURIComponent(template.id)}`, {
+async function saveMessageTemplate(template) {
+  const result = await adminApi(`/api/admin/message-templates/${encodeURIComponent(template.id)}`, {
     method: "PUT",
     body: messageTemplateData(template)
   });
+  Object.assign(template, result.item || {});
+  return result;
 }
 
 function mergeFormsWithDefaults(remoteForms) {
@@ -571,7 +610,7 @@ function openWhatsapp(id, mode = "invite") {
   $("#whatsappModal .modal-kicker").textContent = `${template?.title || "الدورة"} — ${isReminder ? "تذكير عبر واتساب" : "دعوة المجموعة"}`;
   $("#whatsappTitle").textContent = isReminder ? (template?.reminderTitle || "إرسال رسالة تذكير") : (template?.inviteTitle || "إرسال دعوة الانضمام");
   $(".message-editor-heading label").textContent = isReminder ? "نص التذكير" : "نص الدعوة كاملًا";
-  $("#messageEditHint").textContent = isReminder ? "اكتب أو عدّل نص التذكير بحرية قبل الإرسال." : "يمكنك تعديل النص أو إضافة رابط المجموعة قبل النسخ أو الإرسال.";
+  $("#messageEditHint").textContent = isReminder ? "اكتب أو عدّل نص التذكير بحرية؛ سيُضاف رابط المجموعة عند الإرسال أو النسخ الكامل." : "عدّل النص بحرية؛ سيُضاف رابط المجموعة عند الإرسال أو النسخ الكامل من حقله المستقل.";
   $("#sendWhatsappButton").textContent = isReminder ? "إرسال التذكير عبر واتساب" : "إرسال الدعوة عبر واتساب";
   $(".manual-status-note").classList.toggle("hidden", isReminder);
   $("#whatsappRecipient").textContent = `إلى ${answer(whatsappResponse, "name") || "المتدرب"} — ${answer(whatsappResponse, "phone") || "بدون رقم"}`;
@@ -590,7 +629,7 @@ function applyMessageTemplate() {
     city: answer(whatsappResponse, "city") || "مدينتك"
   };
   const body = whatsappMode === "reminder" ? template.reminderBody : template.inviteBody;
-  $("#messagePreview").value = String(body || "").replace(/\{(name|guardian|form|city)\}/g, (_, key) => replacements[key]);
+  $("#messagePreview").value = stripGroupUrlFromBody(body).replace(/\{(name|guardian|form|city)\}/g, (_, key) => replacements[key] || "");
 }
 
 function messageCategoryForResponse(response) {
@@ -610,7 +649,13 @@ function whatsappUrl() {
   if (!whatsappResponse) return "";
   const phone = normalizePhone(answer(whatsappResponse, "phone"));
   if (!/^9665\d{8}$/.test(phone)) return "";
-  return `https://wa.me/${phone}?text=${encodeURIComponent($("#messagePreview").value.trim())}`;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(finalWhatsappMessage())}`;
+}
+
+function finalWhatsappMessage() {
+  const template = messageTemplateForResponse(whatsappResponse);
+  const groupUrl = normalizeWhatsAppGroupUrl(template?.groupUrl);
+  return composeTemplateBody($("#messagePreview").value, {}, groupUrl);
 }
 
 function closeWhatsappModal() {
@@ -620,7 +665,7 @@ function closeWhatsappModal() {
 document.querySelectorAll("[data-close-modal]").forEach(button => button.addEventListener("click", closeWhatsappModal));
 $("#whatsappModal").addEventListener("click", event => { if (event.target === event.currentTarget) closeWhatsappModal(); });
 $("#copyWhatsappMessageButton").addEventListener("click", async event => {
-  const text = $("#messagePreview").value.trim();
+  const text = finalWhatsappMessage();
   if (!text) return showToast("اكتب نص الرسالة أولًا.");
   try {
     await navigator.clipboard.writeText(text);
@@ -644,7 +689,7 @@ $("#sendWhatsappButton").addEventListener("click", () => {
 function renderMessages() {
   $("#messagesList").classList.toggle("single-template-grid", messages.length === 1);
   $("#messagesList").innerHTML = messages.map(message => {
-    return `<article class="admin-card message-card category-message-card" data-message-id="${escapeHTML(message.id)}"><div class="message-card-head"><div><b>قالب مستقل</b><h3>${escapeHTML(message.title)}</h3></div><span>${message.id === "junior" ? "الأشبال" : message.id === "remote" ? "عن بُعد" : "حضوري"}</span></div><label><span class="field-label">اسم رسالة الدعوة</span><input class="field" data-message-field="inviteTitle" value="${escapeHTML(message.inviteTitle)}"></label><label><span class="field-label">نص دعوة مجموعة واتساب</span><textarea class="field" data-message-field="inviteBody">${escapeHTML(message.inviteBody)}</textarea></label><label><span class="field-label">اسم رسالة التذكير</span><input class="field" data-message-field="reminderTitle" value="${escapeHTML(message.reminderTitle)}"></label><label><span class="field-label">نص التذكير</span><textarea class="field" data-message-field="reminderBody">${escapeHTML(message.reminderBody)}</textarea></label><p class="message-help">المتغيرات المتاحة: <code>{name}</code> اسم المتدرب، <code>{guardian}</code> ولي الأمر، <code>{form}</code> البرنامج، <code>{city}</code> المدينة. ويمكن تعديل النص أيضًا قبل كل إرسال.</p></article>`;
+    return `<article class="admin-card message-card category-message-card" data-message-id="${escapeHTML(message.id)}"><div class="message-card-head"><div><b>قالب مستقل</b><h3>${escapeHTML(message.title)}</h3></div><span>${message.id === "junior" ? "الأشبال" : message.id === "remote" ? "عن بُعد" : "حضوري"}</span></div><label><span class="field-label">رابط مجموعة واتساب</span><input class="field" type="url" inputmode="url" dir="ltr" data-message-field="groupUrl" placeholder="https://chat.whatsapp.com/..." value="${escapeHTML(message.groupUrl || "")}"><small class="message-field-help">حقل مستقل؛ يُضاف الرابط تلقائيًا عند إرسال دعوة واتساب ولا تحتاج إلى كتابته داخل النص.</small></label><label class="sms-link-toggle"><input type="checkbox" data-message-field="smsGroupLinkEnabled" ${message.smsGroupLinkEnabled !== false ? "checked" : ""}><span><b>إرسال رابط المجموعة في الرسالة النصية</b><small>مفعّل افتراضيًا. إيقافه لا يؤثر في دعوة واتساب.</small></span></label><label><span class="field-label">اسم رسالة الدعوة</span><input class="field" data-message-field="inviteTitle" value="${escapeHTML(message.inviteTitle)}"></label><label><span class="field-label">نص دعوة مجموعة واتساب</span><textarea class="field" data-message-field="inviteBody">${escapeHTML(message.inviteBody)}</textarea></label><label><span class="field-label">اسم رسالة التذكير</span><input class="field" data-message-field="reminderTitle" value="${escapeHTML(message.reminderTitle)}"></label><label><span class="field-label">نص التذكير</span><textarea class="field" data-message-field="reminderBody">${escapeHTML(message.reminderBody)}</textarea></label><p class="message-help">المتغيرات المتاحة داخل النص: <code>{name}</code> اسم المتدرب، <code>{guardian}</code> ولي الأمر، <code>{form}</code> البرنامج، <code>{city}</code> المدينة. رابط المجموعة يُدار من حقله المستقل ويُضاف عند الإرسال.</p></article>`;
   }).join("");
 }
 
@@ -653,7 +698,7 @@ $("#messagesList").addEventListener("input", event => {
   if (!card || !event.target.dataset.messageField) return;
   const message = messages.find(item => item.id === card.dataset.messageId);
   if (!message) return;
-  message[event.target.dataset.messageField] = event.target.value;
+  message[event.target.dataset.messageField] = event.target.type === "checkbox" ? event.target.checked : event.target.value;
   $("#messageSaveStatus").textContent = "لديك تعديلات غير محفوظة.";
 });
 $("#saveMessagesButton").addEventListener("click", async () => {

@@ -2,7 +2,7 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { buildNotificationMessage, buildRegistrantConfirmationMessage, cleanText, normalizeSaudiMobile } = require("../lib/notification");
+const { buildNotificationMessage, buildRegistrantConfirmationMessage, cleanText, normalizeSaudiMobile, normalizeWhatsAppGroupUrl } = require("../lib/notification");
 
 test("builds a concise registration notification", () => {
   const message = buildNotificationMessage({
@@ -19,10 +19,23 @@ test("removes line breaks from untrusted fields", () => {
   assert.equal(cleanText("سطر\nثانٍ"), "سطر ثانٍ");
 });
 
-test("builds a short registrant confirmation that fits one Arabic SMS segment", () => {
-  const message = buildRegistrantConfirmationMessage();
-  assert.equal(message, "تم استلام طلب انضمامك. سنتواصل معكم قريبًا عبر واتساب.");
-  assert.ok(message.length <= 70);
+test("builds a registrant confirmation with the course and direct group link", () => {
+  const message = buildRegistrantConfirmationMessage(
+    { formTitle: "طلب الالتحاق بدورة برمجة المواقع والأنظمة (عن بُعد)" },
+    "https://chat.whatsapp.com/IrubrVrAyoQHHLhAc51diu?mode=gi_t"
+  );
+  assert.match(message, /دورة برمجة المواقع والأنظمة/);
+  assert.match(message, /لحجز مقعدك مؤقتًا/);
+  assert.match(message, /https:\/\/chat\.whatsapp\.com\/IrubrVrAyoQHHLhAc51diu$/);
+  assert.doesNotMatch(message, /mode=/);
+});
+
+test("keeps WhatsApp invite links direct while removing tracking parameters", () => {
+  assert.equal(
+    normalizeWhatsAppGroupUrl("https://chat.whatsapp.com/AbCdEfGhIjKlMnOpQrStUv?s=cl&p=a"),
+    "https://chat.whatsapp.com/AbCdEfGhIjKlMnOpQrStUv"
+  );
+  assert.equal(normalizeWhatsAppGroupUrl("https://example.com/not-whatsapp"), "");
 });
 
 test("normalizes Saudi mobile numbers for Msegat", () => {

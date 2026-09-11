@@ -1,4 +1,5 @@
 import { decodeFirestoreDocument } from "../assets/firestore-rest.js";
+import { DEFAULT_MESSAGES } from "../assets/forms-config.js";
 import { createPool, initializeDatabase } from "../server/db.js";
 
 const projectId = process.env.FIREBASE_PROJECT_ID || "tmggal";
@@ -104,6 +105,9 @@ async function migrate() {
     }
     for (const { id, data } of templates) {
       const { updatedAt: _updatedAt, updatedBy, ...templateData } = data;
+      const defaults = DEFAULT_MESSAGES.find(item => item.id === id);
+      if (!templateData.groupUrl && defaults?.groupUrl) templateData.groupUrl = defaults.groupUrl;
+      if (templateData.smsGroupLinkEnabled === undefined) templateData.smsGroupLinkEnabled = true;
       await client.query(`
         INSERT INTO message_templates (id, data, updated_at, updated_by) VALUES ($1, $2::jsonb, NOW(), $3)
         ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = NOW(), updated_by = EXCLUDED.updated_by
