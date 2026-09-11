@@ -8,6 +8,24 @@ if (!accessToken) throw new Error("FIREBASE_ACCESS_TOKEN is required");
 
 const pool = createPool();
 
+const formOverrides = {
+  "in-person": {
+    cardTitle: "دورة برمجة المواقع والأنظمة (حضوري)",
+    title: "طلب الالتحاق بدورة برمجة المواقع والأنظمة (حضوري)",
+    price: 2600,
+    oldPrice: 2800
+  },
+  remote: {
+    cardTitle: "دورة برمجة المواقع والأنظمة (عن بُعد)",
+    title: "طلب الالتحاق بدورة برمجة المواقع والأنظمة (عن بُعد)"
+  },
+  junior: {
+    cardTitle: "معسكر الأشبال",
+    title: "طلب الالتحاق بمعسكر الأشبال"
+  },
+  "in-person-project": { status: "upcoming" }
+};
+
 async function listCollection(collection) {
   const documents = [];
   let pageToken = "";
@@ -54,6 +72,7 @@ async function migrate() {
     await client.query("BEGIN");
     for (const { id, data } of forms) {
       const { updatedAt: _updatedAt, deletedAt: _deletedAt, ...formData } = data;
+      Object.assign(formData, formOverrides[id] || {});
       await client.query(`
         INSERT INTO forms (id, data, updated_at) VALUES ($1, $2::jsonb, NOW())
         ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()
