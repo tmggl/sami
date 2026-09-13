@@ -1,4 +1,4 @@
-import { DEFAULT_FORMS, escapeHTML } from "./forms-config.js?v=20260911-postgres-1";
+import { DEFAULT_FORMS, escapeHTML } from "./forms-config.js?v=20260913-riyadh-only-1";
 import { fetchWithTimeout } from "./firestore-rest.js?v=20260911-api-1";
 
 const params = new URLSearchParams(location.search);
@@ -117,13 +117,15 @@ function renderQuestion(question, index) {
   let input = "";
 
   if (["radio", "checkbox"].includes(question.type)) {
-    input = `<div class="choices">${(question.options || []).map((option, optionIndex) => `
-      <label class="choice">
-        <input type="${question.type}" name="${id}" value="${escapeHTML(option)}" ${required && optionIndex === 0 ? required : ""}>
-        <span>${escapeHTML(option)}</span>
-      </label>`).join("")}</div>`;
+    input = `<div class="choices">${(question.options || []).map((option, optionIndex) => {
+      const unavailable = (question.unavailableOptions || []).includes(option);
+      return `<label class="choice ${unavailable ? "is-unavailable" : ""}">
+        <input type="${question.type}" name="${id}" value="${escapeHTML(option)}" ${unavailable ? "disabled" : ""} ${required && optionIndex === 0 ? required : ""}>
+        <span>${escapeHTML(option)}${unavailable ? '<small>غير متاح حضوريًا حاليًا</small>' : ""}</span>
+      </label>`;
+    }).join("")}</div>`;
   } else if (question.type === "select") {
-    input = `<select class="field" id="${id}" name="${id}" ${required}><option value="">اختر إجابة</option>${(question.options || []).map(option => `<option>${escapeHTML(option)}</option>`).join("")}</select>`;
+    input = `<select class="field" id="${id}" name="${id}" ${required}><option value="">اختر إجابة</option>${(question.options || []).map(option => `<option value="${escapeHTML(option)}" ${(question.unavailableOptions || []).includes(option) ? "disabled" : ""}>${escapeHTML(option)}${(question.unavailableOptions || []).includes(option) ? " — غير متاح حضوريًا حاليًا" : ""}</option>`).join("")}</select>`;
   } else if (question.type === "textarea") {
     input = `<textarea class="field" id="${id}" name="${id}" placeholder="${placeholder}" maxlength="1000" ${required}></textarea>`;
   } else {
@@ -135,7 +137,10 @@ function renderQuestion(question, index) {
     input = `<input class="field" id="${id}" name="${id}" type="${type}" placeholder="${placeholder}" ${phoneAttrs} ${lengthAttrs} ${min} ${max} ${required}>`;
   }
 
-  return `<div class="question" data-question="${id}">${label}${help}${input}</div>`;
+  const remoteCta = activeForm.id === "in-person" && question.id === "city" && question.unavailableOptions?.length
+    ? '<a class="city-remote-cta" href="index.html?open=remote#programs">خارج الرياض؟ سجّل في دورة البرمجة المباشرة عن بُعد <span aria-hidden="true">←</span></a>'
+    : "";
+  return `<div class="question" data-question="${id}">${label}${help}${input}${remoteCta}</div>`;
 }
 
 async function submitForm(event) {

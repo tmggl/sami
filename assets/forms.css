@@ -85,6 +85,12 @@ textarea.field { min-height: 110px; resize: vertical; }
 .choice:hover { border-color: #9bbceb; background: #f7faff; }
 .choice:has(input:checked) { border-color: var(--blue); background: var(--blue-soft); color: #174f9f; font-weight: 600; }
 .choice input { width: 18px; height: 18px; accent-color: var(--blue); margin: 0; }
+.choice.is-unavailable { border-style: dashed; color: #77879b; background: #f7f9fc; cursor: not-allowed; }
+.choice.is-unavailable:hover { border-color: var(--line); background: #f7f9fc; }
+.choice.is-unavailable span { display: grid; gap: 2px; }
+.choice.is-unavailable small { color: #9b5360; font-size: 11px; font-weight: 700; }
+.city-remote-cta { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 12px; padding: 11px 13px; border: 1px solid #a9d5f4; border-radius: 11px; color: #155796; background: #eef8ff; cursor: pointer; font: inherit; font-size: 13px; font-weight: 800; line-height: 1.6; text-align: center; text-decoration: none; }
+.city-remote-cta:hover { border-color: #6daee2; background: #e3f3ff; }
 .submit-row { padding-top: 22px; display: flex; align-items: center; gap: 15px; }
 .primary-btn, .secondary-btn, .danger-btn, .ghost-btn, .wa-btn {
   border: 0; border-radius: 12px; padding: 11px 16px; cursor: pointer; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: .18s;

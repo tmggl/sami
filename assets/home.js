@@ -1,4 +1,4 @@
-import { DEFAULT_FORMS, escapeHTML } from "./forms-config.js?v=20260911-postgres-1";
+import { DEFAULT_FORMS, escapeHTML } from "./forms-config.js?v=20260913-riyadh-only-1";
 import { fetchWithTimeout } from "./firestore-rest.js?v=20260911-api-1";
 
 const programsGrid = document.getElementById("programsGrid");
@@ -27,10 +27,10 @@ const homepageOverrides = {
 
 const presentation = {
   "in-person": {
-    icon: "⌘", tag: "حضوري (عرض خاص)", className: "in-person",
+    icon: "⌘", tag: "حضوري الرياض (عرض خاص)", className: "in-person",
     image: "assets/programs/in-person-course.jpg", imageAlt: "متدربون ومتدربات سعوديون في قاعة تدريب برمجية",
     certification: "شهادة معتمدة من المؤسسة العامة للتدريب التقني والمهني (60 ساعة تدريبية)",
-    features: ["60 ساعة خلال أسبوعين", "فترات للرجال والسيدات", "مشروع ويب متكامل", "شهادة تدريبية معتمدة"]
+    features: ["حضوري في الرياض فقط", "60 ساعة خلال أسبوعين", "مشروع ويب متكامل", "شهادة تدريبية معتمدة"]
   },
   remote: {
     icon: "◫", tag: "عن بُعد (مباشر)", className: "remote",
@@ -88,6 +88,7 @@ async function loadPrograms() {
   } catch (error) {
     console.warn("تم عرض بيانات البرامج السريعة المضمّنة.", error);
   }
+  if (new URLSearchParams(location.search).get("open") === "remote" && !hasUserInteraction) toggleProgram("remote", true);
 }
 
 function renderProgram(program) {
@@ -156,13 +157,14 @@ function renderQuestion(programId, question, index) {
   if (["radio", "checkbox"].includes(question.type)) {
     input = `<div class="inline-choices">${(question.options || []).map((option, optionIndex) => {
       const optionId = `${inputId}-${optionIndex}`;
-      return `<label class="inline-choice" for="${optionId}">
-        <input id="${optionId}" type="${question.type}" name="${name}" value="${escapeHTML(option)}" ${required && optionIndex === 0 ? required : ""}>
-        <span>${escapeHTML(option)}</span>
+      const unavailable = (question.unavailableOptions || []).includes(option);
+      return `<label class="inline-choice ${unavailable ? "is-unavailable" : ""}" for="${optionId}">
+        <input id="${optionId}" type="${question.type}" name="${name}" value="${escapeHTML(option)}" ${unavailable ? "disabled" : ""} ${required && optionIndex === 0 ? required : ""}>
+        <span>${escapeHTML(option)}${unavailable ? '<small>غير متاح حضوريًا حاليًا</small>' : ""}</span>
       </label>`;
     }).join("")}</div>`;
   } else if (question.type === "select") {
-    input = `<select class="inline-field" id="${inputId}" name="${name}" ${required}><option value="">اختر إجابة</option>${(question.options || []).map(option => `<option>${escapeHTML(option)}</option>`).join("")}</select>`;
+    input = `<select class="inline-field" id="${inputId}" name="${name}" ${required}><option value="">اختر إجابة</option>${(question.options || []).map(option => `<option value="${escapeHTML(option)}" ${(question.unavailableOptions || []).includes(option) ? "disabled" : ""}>${escapeHTML(option)}${(question.unavailableOptions || []).includes(option) ? " — غير متاح حضوريًا حاليًا" : ""}</option>`).join("")}</select>`;
   } else if (question.type === "textarea") {
     input = `<textarea class="inline-field" id="${inputId}" name="${name}" placeholder="${placeholder}" maxlength="1000" ${required}></textarea>`;
   } else {
@@ -175,7 +177,10 @@ function renderQuestion(programId, question, index) {
     input = `<input class="inline-field" id="${inputId}" name="${name}" type="${type}" placeholder="${placeholder}" ${phoneAttrs} ${lengthAttrs} ${nameAttrs} ${min} ${max} ${required}>`;
   }
 
-  return `<div class="inline-question">${label}${help}${input}</div>`;
+  const remoteCta = programId === "in-person" && question.id === "city" && question.unavailableOptions?.length
+    ? '<button class="city-remote-cta" type="button" data-open-program="remote">خارج الرياض؟ سجّل في دورة البرمجة المباشرة عن بُعد <span aria-hidden="true">←</span></button>'
+    : "";
+  return `<div class="inline-question">${label}${help}${input}${remoteCta}</div>`;
 }
 
 function toggleProgram(programId, forceOpen) {
@@ -207,6 +212,11 @@ function toggleProgram(programId, forceOpen) {
 }
 
 programsGrid.addEventListener("click", event => {
+  const openProgram = event.target.closest("[data-open-program]");
+  if (openProgram) {
+    toggleProgram(openProgram.dataset.openProgram, true);
+    return;
+  }
   const resetButton = event.target.closest("[data-program-reset]");
   if (resetButton) {
     resetInlineForm(resetButton.dataset.programReset);

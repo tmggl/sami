@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { DEFAULT_FORMS } from "../assets/forms-config.js";
-import { normalizeWhatsAppGroupUrl, validateMessageTemplate, validateRegistrationInput, validateSaudiLocalPhone, ValidationError } from "../server/validation.js";
+import { normalizeWhatsAppGroupUrl, validateFormInput, validateMessageTemplate, validateRegistrationInput, validateSaudiLocalPhone, ValidationError } from "../server/validation.js";
 
 test("accepts only a ten-digit Saudi mobile beginning with 05", () => {
   assert.equal(validateSaudiLocalPhone("0501234567"), "0501234567");
@@ -33,6 +33,26 @@ test("rejects unexpected answer fields and closed forms", () => {
     answers: { name: "سامي محمد", phone: "0501234567", injected: "no" }
   }, form), /غير مسموح/);
   assert.throws(() => validateRegistrationInput({ formId: "closed", answers: {}, clientRequestId: "12345678-1234-1234-1234-123456789012" }, { ...form, id: "closed", status: "upcoming" }), /غير متاح/);
+});
+
+test("accepts Riyadh only for the in-person programming course", () => {
+  const form = DEFAULT_FORMS.find(item => item.id === "in-person");
+  const cityQuestion = form.questions.find(question => question.id === "city");
+  assert.deepEqual(cityQuestion.unavailableOptions, ["جدة", "أبها", "القصيم", "المدينة المنورة"]);
+  const saved = validateFormInput(form.id, form);
+  assert.deepEqual(saved.questions.find(question => question.id === "city").unavailableOptions, cityQuestion.unavailableOptions);
+  const answers = Object.fromEntries(form.questions.map(question => {
+    if (question.id === "name") return [question.id, "سامي محمد"];
+    if (question.id === "phone") return [question.id, "0501234567"];
+    if (question.id === "city") return [question.id, "الرياض"];
+    if (question.type === "checkbox") return [question.id, []];
+    if (["radio", "select"].includes(question.type)) return [question.id, question.options[0]];
+    if (question.type === "number") return [question.id, String(question.min || 20)];
+    return [question.id, question.required ? "إجابة" : ""];
+  }));
+  const request = { formId: form.id, answers, clientRequestId: "12345678-1234-1234-1234-123456789012" };
+  assert.equal(validateRegistrationInput(request, form).answers.city, "الرياض");
+  assert.throws(() => validateRegistrationInput({ ...request, answers: { ...answers, city: "جدة" } }, form), /غير متاح حاليًا/);
 });
 
 test("validates and shortens the official WhatsApp group link", () => {

@@ -14,7 +14,7 @@ export const DEFAULT_FORMS = [
   {
     id: "in-person",
     cardTitle: "دورة برمجة المواقع والأنظمة (حضوري)",
-    cardDescription: "مسار عملي مكثف لبناء المواقع والأنظمة من الصفر حتى النشر.",
+    cardDescription: "تدريب حضوري عملي في الرياض، تبني فيه موقعك ونظامك خطوة بخطوة من الصفر حتى النشر.",
     price: 2600,
     oldPrice: 2800,
     title: "طلب الالتحاق بدورة برمجة المواقع والأنظمة (حضوري)",
@@ -38,7 +38,7 @@ export const DEFAULT_FORMS = [
       { label: "الدفع", value: "بعد التواصل والتأكيد" }
     ],
     questions: [
-      { id: "city", label: "في أي مدينة ترغب بحضور الدورة؟", help: "سنتواصل معك قبل موعد الدورة في مدينتك بوقت كافٍ.", type: "radio", required: true, options: ["الرياض", "جدة", "أبها", "القصيم", "المدينة المنورة"] },
+      { id: "city", label: "أين ترغب بحضور دورة برمجة المواقع والأنظمة؟", help: "التدريب الحضوري متاح الآن في الرياض فقط. من مدينة أخرى؟ انضم إلينا مباشرةً عن بُعد وتعلّم من مكانك.", type: "radio", required: true, options: ["الرياض", "جدة", "أبها", "القصيم", "المدينة المنورة"], unavailableOptions: ["جدة", "أبها", "القصيم", "المدينة المنورة"] },
       { id: "name", label: "الاسم الكامل", placeholder: "اكتب اسمك الثلاثي", type: "text", required: true },
       { id: "phone", label: "رقم التواصل واتساب", help: "اكتب الرقم بصيغة 05XXXXXXXX", placeholder: "05XXXXXXXX", type: "tel", required: true },
       { id: "age", label: "العمر", help: "يجب ألا يقل العمر عن 18 عامًا.", placeholder: "مثال: 24", type: "number", min: 18, required: true },

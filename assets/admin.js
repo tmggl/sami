@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
-import { FIREBASE_CONFIG, DEFAULT_FORMS, DEFAULT_MESSAGES, FIELD_LABELS, normalizePhone, escapeHTML, createId } from "./forms-config.js?v=20260911-group-links-1";
+import { FIREBASE_CONFIG, DEFAULT_FORMS, DEFAULT_MESSAGES, FIELD_LABELS, normalizePhone, escapeHTML, createId } from "./forms-config.js?v=20260913-riyadh-only-1";
 
 const firebaseApp = initializeApp(FIREBASE_CONFIG);
 const auth = getAuth(firebaseApp);
@@ -346,6 +346,7 @@ function questionEditor(question, index) {
       <label><span class="field-label">أعلى قيمة (للأرقام)</span><input class="field" type="number" data-q-field="max" value="${escapeHTML(question.max ?? "")}"></label>
       <label class="wide"><span class="field-label">شرح إضافي</span><input class="field" data-q-field="help" value="${escapeHTML(question.help || "")}"></label>
       <label class="wide"><span class="field-label">الخيارات — كل خيار في سطر</span><textarea class="field" data-q-field="options">${escapeHTML((question.options || []).join("\n"))}</textarea></label>
+      ${["radio", "checkbox", "select"].includes(question.type) ? `<label class="wide"><span class="field-label">الخيارات غير المتاحة حاليًا — كل خيار في سطر</span><textarea class="field" data-q-field="unavailableOptions">${escapeHTML((question.unavailableOptions || []).join("\n"))}</textarea><small class="message-field-help">ستظهر للزائر بوضوح، لكن لا يمكن اختيارها أو إرسال طلب بها.</small></label>` : ""}
       <label class="check-line"><input type="checkbox" data-q-field="required" ${question.required ? "checked" : ""}> سؤال مطلوب</label>
     </div>
   </article>`;
@@ -370,6 +371,7 @@ $("#formEditor").addEventListener("input", event => {
   if (questionElement && qField) {
     const question = form.questions[Number(questionElement.dataset.questionIndex)];
     if (qField === "options") question.options = event.target.value.split("\n").map(value => value.trim()).filter(Boolean);
+    else if (qField === "unavailableOptions") question.unavailableOptions = event.target.value.split("\n").map(value => value.trim()).filter(Boolean);
     else if (qField === "required") question.required = event.target.checked;
     else if (["min", "max"].includes(qField)) question[qField] = event.target.value === "" ? undefined : Number(event.target.value);
     else question[qField] = event.target.value;

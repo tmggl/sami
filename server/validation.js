@@ -29,12 +29,14 @@ export function validateSaudiLocalPhone(value) {
 function validateQuestionAnswer(question, rawValue) {
   const required = Boolean(question.required);
   const field = question.id;
+  const unavailable = new Set(question.unavailableOptions || []);
   if (question.type === "checkbox") {
     if (!Array.isArray(rawValue)) throw new ValidationError("الإجابة المحددة غير صحيحة.", field);
     const allowed = new Set(question.options || []);
     if (rawValue.length > allowed.size || rawValue.some(value => typeof value !== "string" || !allowed.has(value))) {
       throw new ValidationError("أحد الخيارات المحددة غير صحيح.", field);
     }
+    if (rawValue.some(value => unavailable.has(value))) throw new ValidationError("هذا الخيار غير متاح حاليًا.", field);
     if (required && rawValue.length === 0) throw new ValidationError("يرجى تحديد خيار واحد على الأقل.", field);
     return rawValue;
   }
@@ -46,6 +48,7 @@ function validateQuestionAnswer(question, rawValue) {
   if (["radio", "select"].includes(question.type) && !(question.options || []).includes(value)) {
     throw new ValidationError("الخيار المحدد غير صحيح.", field);
   }
+  if (unavailable.has(value)) throw new ValidationError("التدريب الحضوري غير متاح حاليًا في هذه المدينة؛ اختر الرياض أو الدورة عن بُعد.", field);
   if (question.type === "number") {
     const number = Number(value);
     if (!Number.isFinite(number)) throw new ValidationError("الرقم المدخل غير صحيح.", field);
@@ -97,6 +100,9 @@ export function validateFormInput(id, body) {
     ids.add(questionId);
     const type = ALLOWED_TYPES.has(question.type) ? question.type : "text";
     const options = Array.isArray(question.options) ? question.options.slice(0, 30).map(option => text(String(option), 200, "option", true)) : [];
+    const unavailableOptions = Array.isArray(question.unavailableOptions)
+      ? [...new Set(question.unavailableOptions.map(option => text(String(option), 200, "unavailableOption", true)))].filter(option => options.includes(option))
+      : [];
     return {
       id: questionId,
       label: text(String(question.label || ""), 300, "question.label", true),
@@ -105,6 +111,7 @@ export function validateFormInput(id, body) {
       ...(question.help ? { help: text(String(question.help), 500, "question.help") } : {}),
       ...(question.placeholder ? { placeholder: text(String(question.placeholder), 300, "question.placeholder") } : {}),
       ...(options.length ? { options } : {}),
+      ...(unavailableOptions.length ? { unavailableOptions } : {}),
       ...(Number.isFinite(Number(question.min)) ? { min: Number(question.min) } : {}),
       ...(Number.isFinite(Number(question.max)) ? { max: Number(question.max) } : {})
     };
