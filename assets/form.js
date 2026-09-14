@@ -87,8 +87,8 @@ function renderForm() {
   }
 
   container.innerHTML = `
-    <form id="dynamicForm" novalidate>
-      ${(activeForm.questions || []).map(renderQuestion).join("")}
+    <form id="dynamicForm" data-next-child-index="1" novalidate>
+      ${activeForm.id === "junior" ? `<div class="junior-children">${renderJuniorChild(0)}</div><button class="add-junior-child" type="button" data-add-junior-child>+ إضافة ابن آخر</button><p class="junior-family-help">يمكنك تسجيل جميع أبنائك في طلب واحد، بالرقم نفسه أو برقم مختلف لكل ابن.</p>` : (activeForm.questions || []).map((question, index) => renderQuestion(question, index)).join("")}
       <div id="formAlert" role="alert"></div>
       <div class="submit-row">
         <button class="primary-btn" id="submitButton" type="submit">${escapeHTML(activeForm.submitLabel || "إرسال الطلب")} <span aria-hidden="true">←</span></button>
@@ -99,6 +99,13 @@ function renderForm() {
   document.getElementById("dynamicForm").addEventListener("submit", submitForm);
 }
 
+function renderJuniorChild(childIndex) {
+  return `<section class="junior-child" data-junior-child="${childIndex}">
+    <div class="junior-child-head"><h3>بيانات الابن <span data-child-number>${childIndex + 1}</span></h3>${childIndex ? '<button type="button" class="remove-junior-child" data-remove-junior-child aria-label="حذف هذا الابن">حذف الإضافة ×</button>' : ""}</div>
+    ${(activeForm.questions || []).map((question, index) => renderQuestion(question, index, childIndex)).join("")}
+  </section>`;
+}
+
 function renderDetailValue(item) {
   const rawValue = item.label === "السعر" && activeForm.price ? `${activeForm.price} ريال` : String(item.value || "");
   const cost = rawValue.match(/^(\d+(?:\.\d+)?)\s*ريال(?:\s*[—-]\s*)?(.*)$/);
@@ -106,10 +113,10 @@ function renderDetailValue(item) {
   return `<span class="detail-cost"><span class="inline-price"><img src="assets/saudi-riyal-symbol.svg" alt="ريال سعودي"><span>${escapeHTML(cost[1])}</span></span>${cost[2] ? `<small>${escapeHTML(cost[2])}</small>` : ""}</span>`;
 }
 
-function renderQuestion(question, index) {
+function renderQuestion(question, index, childIndex = null) {
   const required = question.required ? "required" : "";
   const requiredMark = question.required ? `<span class="required" aria-label="مطلوب"> *</span>` : "";
-  const id = escapeHTML(question.id || `question-${index + 1}`);
+  const id = escapeHTML(`${childIndex === null ? "" : `child-${childIndex}-`}${question.id || `question-${index + 1}`}`);
   const label = `<div class="question-head"><label class="question-label" for="${id}">${escapeHTML(question.label)}${requiredMark}</label></div>`;
   const helpText = question.type === "tel" ? "يجب أن يبدأ الرقم بـ 05 ويتكون من 10 أرقام." : question.help;
   const help = helpText ? `<p class="help">${escapeHTML(helpText)}</p>` : "";
@@ -149,13 +156,13 @@ async function submitForm(event) {
   const alertBox = document.getElementById("formAlert");
   const button = document.getElementById("submitButton");
 
-  const phoneInput = formElement.querySelector('input[type="tel"]');
-  if (phoneInput) enforceLocalPhone(phoneInput);
+  const phoneInputs = [...formElement.querySelectorAll('input[type="tel"]')];
+  phoneInputs.forEach(enforceLocalPhone);
 
   if (!formElement.checkValidity()) {
     formElement.reportValidity();
     alertBox.className = "form-alert error";
-    alertBox.textContent = phoneInput && !/^05[0-9]{8}$/.test(phoneInput.value)
+    alertBox.textContent = phoneInputs.some(input => !/^05[0-9]{8}$/.test(input.value))
       ? "رقم الجوال يجب أن يبدأ بـ 05 ويتكون من 10 أرقام."
       : "يرجى إكمال جميع الحقول المطلوبة.";
     return;
@@ -167,17 +174,15 @@ async function submitForm(event) {
   alertBox.textContent = "";
 
   const formData = new FormData(formElement);
-  const answers = {};
-  for (const question of activeForm.questions || []) {
-    answers[question.id] = question.type === "checkbox" ? formData.getAll(question.id) : (formData.get(question.id) || "");
-  }
-  submittedAnswers = answers;
-
-  const payload = {
-    formId: activeForm.id,
-    answers,
-    clientRequestId: createRequestId()
-  };
+  const readAnswers = prefix => Object.fromEntries((activeForm.questions || []).map(question => {
+    const key = `${prefix}${question.id}`;
+    return [question.id, question.type === "checkbox" ? formData.getAll(key) : (formData.get(key) || "")];
+  }));
+  const children = activeForm.id === "junior"
+    ? [...formElement.querySelectorAll("[data-junior-child]")].map(child => readAnswers(`child-${child.dataset.juniorChild}-`))
+    : null;
+  submittedAnswers = children ? { children } : readAnswers("");
+  const payload = { formId: activeForm.id, clientRequestId: createRequestId(), ...(children ? { children } : { answers: submittedAnswers }) };
 
   try {
     await createRegistration(payload);
@@ -195,7 +200,13 @@ async function submitForm(event) {
 }
 
 function showSuccess(overrideMessage = "") {
-  const summary = [
+  const children = submittedAnswers.children || [];
+  const familySummary = children.length ? [
+    ["عدد الأبناء", String(children.length)],
+    ["الأبناء", children.map(child => child.name).join("، ")],
+    ["أرقام التواصل", [...new Set(children.map(child => child.phone))].join("، ")]
+  ] : null;
+  const summary = familySummary || [
     ["البرنامج", activeForm.cardTitle || activeForm.title],
     ["اسم المتدرب", submittedAnswers.name],
     ["ولي الأمر", submittedAnswers.guardian],
@@ -209,7 +220,7 @@ function showSuccess(overrideMessage = "") {
       <div class="success-icon">✓</div>
       <span class="success-kicker">تم الإرسال بنجاح</span>
       <h2>${escapeHTML(activeForm.successTitle || "تم استلام طلبك")}</h2>
-      <p>${escapeHTML(overrideMessage || activeForm.successMessage || "سنتواصل معك قريبًا عبر واتساب.")}</p>
+      <p>${escapeHTML(overrideMessage || (children.length > 1 ? `تم حفظ طلب تسجيل ${children.length} من الأبناء. يظهر كل ابن لدى الإدارة، وستصل رسالة تأكيد واحدة لكل رقم جوال مستخدم.` : "") || activeForm.successMessage || "سنتواصل معك قريبًا عبر واتساب.")}</p>
       <div class="success-summary">${summary.map(([label, value]) => `<div class="success-summary-item"><small>${escapeHTML(label)}</small><b ${label === "الجوال" ? 'dir="ltr"' : ""}>${escapeHTML(Array.isArray(value) ? value.join("، ") : value)}</b></div>`).join("")}</div>
       <div class="success-next"><span aria-hidden="true">◉</span><div><b>الخطوة التالية</b><small>سنراجع الطلب ونتواصل معكم قريبًا عبر واتساب.</small></div></div>
       <button class="primary-btn" id="submitAnotherButton" type="button">تقديم طلب آخر</button>
@@ -232,11 +243,12 @@ async function syncLocalResponses() {
   for (const item of pending) {
     item.clientRequestId ||= createRequestId();
     const answers = { ...(item.answers || {}) };
-    answers.phone = toLocalPhone(answers.phone);
+    if (item.children) item.children = item.children.map(child => ({ ...child, phone: toLocalPhone(child.phone) }));
+    else answers.phone = toLocalPhone(answers.phone);
     try {
       await createRegistration({
         formId: item.formId,
-        answers,
+        ...(item.children ? { children: item.children } : { answers }),
         clientRequestId: item.clientRequestId
       }, 5000);
     } catch (error) {
@@ -247,12 +259,12 @@ async function syncLocalResponses() {
 }
 
 async function createRegistration(payload, timeout = 9000) {
-  const response = await fetchWithTimeout("/api/registrations", {
+  const response = await fetchWithTimeout(payload.children ? "/api/registrations/family" : "/api/registrations", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
-    keepalive: true
-  }, timeout);
+    keepalive: !payload.children
+  }, payload.children ? Math.max(timeout, 20000) : timeout);
   const result = await response.json().catch(() => ({}));
   if (!response.ok) {
     const error = new Error(`API ${response.status}`);
@@ -289,6 +301,28 @@ function toLocalPhone(value) {
 container.addEventListener("input", event => {
   formTouched = true;
   if (event.target.matches('input[type="tel"]')) enforceLocalPhone(event.target);
+});
+container.addEventListener("click", event => {
+  const addChild = event.target.closest("[data-add-junior-child]");
+  if (addChild) {
+    const form = addChild.closest("#dynamicForm");
+    const childIndex = Number(form.dataset.nextChildIndex || 1);
+    form.dataset.nextChildIndex = String(childIndex + 1);
+    form.querySelector(".junior-children").insertAdjacentHTML("beforeend", renderJuniorChild(childIndex));
+    const first = form.querySelector('[data-junior-child="0"]');
+    const added = form.querySelector(`[data-junior-child="${childIndex}"]`);
+    for (const field of ["guardian", "phone"]) added.querySelector(`[name="child-${childIndex}-${field}"]`).value = first.querySelector(`[name="child-0-${field}"]`).value;
+    added.scrollIntoView({ behavior: "smooth", block: "start" });
+    formTouched = true;
+    return;
+  }
+  const removeChild = event.target.closest("[data-remove-junior-child]");
+  if (removeChild) {
+    const form = removeChild.closest("#dynamicForm");
+    removeChild.closest("[data-junior-child]").remove();
+    form.querySelectorAll("[data-child-number]").forEach((number, index) => { number.textContent = index + 1; });
+    formTouched = true;
+  }
 });
 activeForm = localForm();
 renderForm();

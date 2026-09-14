@@ -85,6 +85,13 @@ textarea.field { min-height: 110px; resize: vertical; }
 .choice:hover { border-color: #9bbceb; background: #f7faff; }
 .choice:has(input:checked) { border-color: var(--blue); background: var(--blue-soft); color: #174f9f; font-weight: 600; }
 .choice input { width: 18px; height: 18px; accent-color: var(--blue); margin: 0; }
+.junior-children { display: grid; gap: 18px; }
+.junior-child { padding: 17px; border: 1px solid #b9d4f3; border-radius: 16px; background: #f8fbff; }
+.junior-child-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.junior-child-head h3 { margin: 0; color: var(--navy); font-size: 16px; }
+.remove-junior-child { border: 1px solid #efc4c9; border-radius: 9px; padding: 6px 10px; color: #a72a36; background: #fff6f6; cursor: pointer; font-size: 12px; font-weight: 800; }
+.add-junior-child { width: 100%; margin-top: 14px; padding: 12px 14px; border: 1px dashed #6e9bd3; border-radius: 12px; color: var(--blue); background: #edf5ff; cursor: pointer; font-size: 14px; font-weight: 800; }
+.junior-family-help { margin: 7px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
 .choice.is-unavailable { border-style: dashed; color: #77879b; background: #f7f9fc; cursor: not-allowed; }
 .choice.is-unavailable:hover { border-color: var(--line); background: #f7f9fc; }
 .choice.is-unavailable span { display: grid; gap: 2px; }

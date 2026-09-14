@@ -10,6 +10,7 @@ import { processNotificationJobs, triggerNotificationWorker } from "./notificati
 import {
   ValidationError,
   validateFormInput,
+  validateFamilyRegistrationInput,
   validateMessageTemplate,
   validateRegistrationInput,
   validateStatus
@@ -41,7 +42,7 @@ app.use(helmet({
   },
   referrerPolicy: { policy: "strict-origin-when-cross-origin" }
 }));
-app.use(express.json({ limit: "40kb", strict: true }));
+app.use(express.json({ limit: "256kb", strict: true }));
 
 app.use((req, res, next) => {
   req.requestId = req.get("x-request-id") || crypto.randomUUID();
@@ -121,6 +122,48 @@ app.post("/api/registrations", registrationLimiter, async (req, res, next) => {
   }
 });
 
+app.post("/api/registrations/family", registrationLimiter, async (req, res, next) => {
+  let client;
+  try {
+    client = await pool.connect();
+    const formResult = await client.query("SELECT id, data FROM forms WHERE id = 'junior'");
+    if (!formResult.rowCount) throw new ValidationError("معسكر الأشبال غير موجود.", "formId");
+    const form = { id: "junior", ...formResult.rows[0].data };
+    const input = validateFamilyRegistrationInput(req.body, form);
+    const batchId = crypto.randomUUID();
+    await client.query("BEGIN");
+    const created = await client.query(
+      "INSERT INTO registration_batches (id, client_request_id, form_id, child_count) VALUES ($1, $2, 'junior', $3) ON CONFLICT (client_request_id) DO NOTHING RETURNING id, created_at",
+      [batchId, input.clientRequestId, input.children.length]
+    );
+    if (!created.rowCount) {
+      const existing = await client.query("SELECT id, child_count, created_at FROM registration_batches WHERE client_request_id = $1", [input.clientRequestId]);
+      await client.query("COMMIT");
+      return res.status(200).json({ ok: true, batchId: existing.rows[0].id, count: existing.rows[0].child_count, duplicate: true, receivedAt: existing.rows[0].created_at });
+    }
+    const childrenRows = input.children.map((answers, index) => ({
+      id: crypto.randomUUID(),
+      client_request_id: `${input.clientRequestId}-${index + 1}`,
+      answers,
+      batch_position: index + 1
+    }));
+    await client.query(`
+      INSERT INTO registrations (id, client_request_id, form_id, form_title, answers, status, source, batch_id, batch_position)
+      SELECT child.id, child.client_request_id, 'junior', $2, child.answers, 'new', 'website', $3, child.batch_position
+      FROM jsonb_to_recordset($1::jsonb) AS child(id text, client_request_id text, answers jsonb, batch_position integer)
+    `, [JSON.stringify(childrenRows), form.title, batchId]);
+    await client.query("INSERT INTO notification_jobs (registration_id) SELECT id FROM registrations WHERE batch_id = $1 ORDER BY batch_position", [batchId]);
+    await client.query("COMMIT");
+    res.status(201).json({ ok: true, batchId, ids: childrenRows.map(child => child.id), count: childrenRows.length, receivedAt: created.rows[0].created_at });
+    triggerNotificationWorker(pool);
+  } catch (error) {
+    if (client) try { await client.query("ROLLBACK"); } catch {}
+    next(error);
+  } finally {
+    client?.release();
+  }
+});
+
 function hasLegacyBridgeAccess(req) {
   const configuredSecret = process.env.LEGACY_BRIDGE_SECRET || "";
   const providedSecret = req.get("x-bridge-secret") || "";
@@ -176,7 +219,7 @@ app.get("/api/admin/dashboard", async (req, res, next) => {
     const junior = req.admin.role === "junior";
     const [formsResult, registrationsResult, messagesResult] = await Promise.all([
       pool.query(`SELECT id, data FROM forms WHERE data->>'status' <> 'deleted' ${junior ? "AND id = 'junior'" : ""} ORDER BY updated_at, id`),
-      pool.query(`SELECT * FROM registrations ${junior ? "WHERE form_id = 'junior'" : ""} ORDER BY created_at DESC`),
+      pool.query(`SELECT r.*, b.child_count AS batch_count FROM registrations r LEFT JOIN registration_batches b ON b.id = r.batch_id ${junior ? "WHERE r.form_id = 'junior'" : ""} ORDER BY r.created_at DESC`),
       pool.query(`SELECT id, data FROM message_templates ${junior ? "WHERE id = 'junior'" : ""} ORDER BY id`)
     ]);
     res.json({

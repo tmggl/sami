@@ -483,7 +483,7 @@ function renderResponses() {
   const city = $("#cityFilter").value;
   const filtered = responses.filter(item => {
     const itemCity = responseCity(item);
-    const haystack = [answer(item, "name"), answer(item, "phone"), itemCity, item.formTitle].join(" ").toLowerCase();
+    const haystack = [answer(item, "name"), answer(item, "guardian"), answer(item, "phone"), itemCity, item.formTitle].join(" ").toLowerCase();
     return (!search || haystack.includes(search))
       && (formId === "all" || item.formId === formId)
       && (status === "all" || item.status === status)
@@ -508,7 +508,8 @@ function responseRow(item) {
 
 function personCell(item) {
   const name = String(answer(item, "name") || "بدون اسم");
-  return `<div class="person"><span class="avatar">${escapeHTML(name.trim().charAt(0) || "؟")}</span><div><b>${escapeHTML(name)}</b><small>${escapeHTML(answer(item, "degree") || "متدرب")}</small></div></div>`;
+  const family = item.formId === "junior" && Number(item.batchCount) > 1 ? `طلب عائلي (${item.batchCount} من الأشبال) · ` : "";
+  return `<div class="person"><span class="avatar">${escapeHTML(name.trim().charAt(0) || "؟")}</span><div><b>${escapeHTML(name)}</b><small>${escapeHTML(family + (answer(item, "guardian") || answer(item, "degree") || "متدرب"))}</small></div></div>`;
 }
 function statusMenu(item) {
   const current = statusLabels[item.status] ? item.status : "new";
@@ -576,7 +577,7 @@ function openDetails(id) {
   const extraKeys = Object.keys(answers).filter(key => !questionKeys.includes(key));
   const orderedKeys = [...questionKeys, ...extraKeys];
   $("#detailsSummary").innerHTML = `
-    <div><small>البرنامج</small><b>${escapeHTML(item.formTitle || "—")}</b></div>
+    <div><small>البرنامج</small><b>${escapeHTML(item.formTitle || "—")}${Number(item.batchCount) > 1 ? ` · طلب عائلي (${item.batchCount} من الأشبال)` : ""}</b></div>
     <div><small>تاريخ التسجيل</small><b>${escapeHTML(formatDate(item))}</b></div>
     <div><small>حالة المتابعة</small>${statusMenu(item)}</div>`;
   $("#responseDetails").innerHTML = orderedKeys.map((key, index) => {

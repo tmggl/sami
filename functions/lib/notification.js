@@ -11,6 +11,7 @@ function buildNotificationMessage(data, adminUrl) {
   const choice = cleanText(answers.time || answers.city || answers.interest || "غير محدد", 55);
   return [
     "تسجيل جديد",
+    data.batchCount > 1 ? `طلب عائلي: ${data.batchCount} من الأشبال` : "",
     `الاسم: ${name}`,
     `المسار: ${form}`,
     `الخيار: ${choice}`,
@@ -32,8 +33,13 @@ function normalizeWhatsAppGroupUrl(value = "") {
 function buildRegistrantConfirmationMessage(data = {}, groupUrl = "") {
   const form = cleanText(data.formTitle || data.formId || "البرنامج التدريبي", 70).replace(/^طلب الالتحاق ب/, "");
   const link = normalizeWhatsAppGroupUrl(groupUrl);
-  if (!link) return `تم استلام طلبك في ${form}. سنتواصل معك قريبًا عبر واتساب.`;
-  return `تم استلام طلبك في ${form}.\nلحجز مقعدك مؤقتًا، انضم إلى مجموعة واتساب:\n${link}`;
+  const familyNames = Array.isArray(data.familyNames) ? data.familyNames.map(name => cleanText(name, 25)).filter(Boolean) : [];
+  const namesText = familyNames.length > 3 ? `${familyNames.slice(0, 3).join("، ")} وآخرين` : familyNames.join("، ");
+  const intro = familyNames.length > 1
+    ? `تم استلام طلب تسجيل ${familyNames.length} من الأشبال (${namesText}) في ${form}.`
+    : `تم استلام طلبك في ${form}.`;
+  if (!link) return `${intro} سنتواصل معك قريبًا عبر واتساب.`;
+  return `${intro}\n${familyNames.length > 1 ? "لحجز المقاعد مؤقتًا" : "لحجز مقعدك مؤقتًا"}، انضم إلى مجموعة واتساب:\n${link}`;
 }
 
 function normalizeSaudiMobile(value = "") {

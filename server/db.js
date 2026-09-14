@@ -35,10 +35,22 @@ export async function initializeDatabase(pool) {
       status_updated_at TIMESTAMPTZ
     );
 
+    CREATE TABLE IF NOT EXISTS registration_batches (
+      id TEXT PRIMARY KEY,
+      client_request_id TEXT NOT NULL UNIQUE,
+      form_id TEXT NOT NULL,
+      child_count INTEGER NOT NULL CHECK (child_count > 0),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    ALTER TABLE registrations ADD COLUMN IF NOT EXISTS batch_id TEXT REFERENCES registration_batches(id) ON DELETE SET NULL;
+    ALTER TABLE registrations ADD COLUMN IF NOT EXISTS batch_position INTEGER;
+
     CREATE INDEX IF NOT EXISTS registrations_created_at_idx ON registrations (created_at DESC);
     CREATE INDEX IF NOT EXISTS registrations_form_id_idx ON registrations (form_id);
     CREATE INDEX IF NOT EXISTS registrations_status_idx ON registrations (status);
     CREATE INDEX IF NOT EXISTS registrations_city_idx ON registrations ((answers->>'city'));
+    CREATE INDEX IF NOT EXISTS registrations_batch_id_idx ON registrations (batch_id) WHERE batch_id IS NOT NULL;
 
     CREATE TABLE IF NOT EXISTS message_templates (
       id TEXT PRIMARY KEY,
@@ -132,6 +144,9 @@ export function registrationFromRow(row) {
     answers: row.answers,
     status: row.status,
     source: row.source,
+    batchId: row.batch_id || null,
+    batchPosition: row.batch_position || null,
+    batchCount: row.batch_count || null,
     createdAt: row.created_at,
     createdAtISO: row.created_at?.toISOString?.() || row.created_at,
     statusUpdatedAt: row.status_updated_at

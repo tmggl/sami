@@ -82,6 +82,20 @@ export function validateRegistrationInput(body, form) {
   return { formId, answers, clientRequestId, source: "website" };
 }
 
+export function validateFamilyRegistrationInput(body, form) {
+  if (form.id !== "junior") throw new ValidationError("التسجيل العائلي متاح لمعسكر الأشبال فقط.", "formId");
+  if (!Array.isArray(body?.children) || body.children.length === 0) throw new ValidationError("أضف بيانات ابن واحد على الأقل.", "children");
+  const children = body.children.map((answers, index) => {
+    try {
+      return validateRegistrationInput({ formId: body.formId, answers, clientRequestId: body.clientRequestId }, form).answers;
+    } catch (error) {
+      if (error instanceof ValidationError) error.message = `الابن ${index + 1}: ${error.message}`;
+      throw error;
+    }
+  });
+  return { formId: form.id, clientRequestId: body.clientRequestId, children };
+}
+
 export function validateStatus(value) {
   if (!ALLOWED_STATUSES.has(value)) throw new ValidationError("حالة الطلب غير صحيحة.", "status");
   return value;

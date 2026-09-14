@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { DEFAULT_FORMS } from "../assets/forms-config.js";
-import { normalizeWhatsAppGroupUrl, validateFormInput, validateMessageTemplate, validateRegistrationInput, validateSaudiLocalPhone, ValidationError } from "../server/validation.js";
+import { normalizeWhatsAppGroupUrl, validateFamilyRegistrationInput, validateFormInput, validateMessageTemplate, validateRegistrationInput, validateSaudiLocalPhone, ValidationError } from "../server/validation.js";
 
 test("accepts only a ten-digit Saudi mobile beginning with 05", () => {
   assert.equal(validateSaudiLocalPhone("0501234567"), "0501234567");
@@ -53,6 +53,23 @@ test("accepts Riyadh only for the in-person programming course", () => {
   const request = { formId: form.id, answers, clientRequestId: "12345678-1234-1234-1234-123456789012" };
   assert.equal(validateRegistrationInput(request, form).answers.city, "الرياض");
   assert.throws(() => validateRegistrationInput({ ...request, answers: { ...answers, city: "جدة" } }, form), /غير متاح حاليًا/);
+});
+
+test("validates every child in one junior family request and allows a shared phone", () => {
+  const form = DEFAULT_FORMS.find(item => item.id === "junior");
+  const makeAnswers = name => Object.fromEntries(form.questions.map(question => {
+    if (question.id === "name") return [question.id, name];
+    if (question.id === "phone") return [question.id, "0501234567"];
+    if (question.id === "guardian") return [question.id, "ولي الأمر"];
+    if (question.type === "checkbox") return [question.id, []];
+    if (["radio", "select"].includes(question.type)) return [question.id, question.options[0]];
+    if (question.type === "number") return [question.id, String(question.min || 12)];
+    return [question.id, question.required ? "إجابة" : ""];
+  }));
+  const request = { formId: "junior", clientRequestId: "12345678-1234-1234-1234-123456789012", children: [makeAnswers("أحمد"), makeAnswers("محمد")] };
+  assert.equal(validateFamilyRegistrationInput(request, form).children.length, 2);
+  assert.throws(() => validateFamilyRegistrationInput({ ...request, children: [request.children[0], { ...request.children[1], age: "7" }] }, form), /الابن 2:/);
+  assert.throws(() => validateFamilyRegistrationInput({ ...request, children: [] }, form), /ابن واحد/);
 });
 
 test("validates and shortens the official WhatsApp group link", () => {

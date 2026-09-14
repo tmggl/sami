@@ -11,6 +11,15 @@ const {
 
 let processing = false;
 
+export function familySmsPlan(siblings, job) {
+  const phone = normalizeSaudiMobile(job.answers?.phone);
+  const matching = siblings.filter(row => normalizeSaudiMobile(row.answers?.phone) === phone);
+  return {
+    send: Boolean(phone && Number(matching[0]?.batch_position) === Number(job.batch_position)),
+    names: matching.map(row => row.answers?.name).filter(Boolean)
+  };
+}
+
 function smsConfig() {
   return {
     username: process.env.MSEGAT_USERNAME || "",
@@ -49,9 +58,10 @@ async function claimJob(pool) {
       SELECT j.id AS job_id, j.attempts AS job_attempts, j.result AS job_result,
              mt.data->>'groupUrl' AS group_url,
              CASE WHEN mt.data->>'smsGroupLinkEnabled' = 'false' THEN false ELSE true END AS sms_group_link_enabled,
-             r.*
+             r.*, b.child_count AS batch_count
       FROM notification_jobs j
       JOIN registrations r ON r.id = j.registration_id
+      LEFT JOIN registration_batches b ON b.id = r.batch_id
       LEFT JOIN message_templates mt ON mt.id = CASE
         WHEN r.form_id = 'junior' THEN 'junior'
         WHEN r.form_id = 'remote' THEN 'remote'
@@ -94,7 +104,7 @@ async function deliverJob(pool, job) {
     return;
   }
 
-  const data = { formId: job.form_id, formTitle: job.form_title, answers: job.answers };
+  const data = { formId: job.form_id, formTitle: job.form_title, answers: job.answers, batchCount: job.batch_count };
   const jobs = [{
     key: "adminSms",
     phone: config.adminPhone,
@@ -104,10 +114,18 @@ async function deliverJob(pool, job) {
     jobs.push({ key: "juniorAdminSms", phone: config.juniorAdminPhone, message: buildNotificationMessage(data, config.adminUrl) });
   }
   const registrantPhone = normalizeSaudiMobile(job.answers?.phone);
-  if (registrantPhone) jobs.push({
+  let familyNames = [];
+  let sendRegistrantSms = Boolean(registrantPhone);
+  if (job.batch_id && registrantPhone) {
+    const siblings = await pool.query("SELECT answers, batch_position FROM registrations WHERE batch_id = $1 ORDER BY batch_position", [job.batch_id]);
+    const plan = familySmsPlan(siblings.rows, job);
+    familyNames = plan.names;
+    sendRegistrantSms = plan.send;
+  }
+  if (sendRegistrantSms) jobs.push({
     key: "registrantSms",
     phone: registrantPhone,
-    message: buildRegistrantConfirmationMessage(data, job.sms_group_link_enabled ? job.group_url : "")
+    message: buildRegistrantConfirmationMessage({ ...data, familyNames }, job.sms_group_link_enabled ? job.group_url : "")
   });
 
   const previousOutcome = job.job_result && typeof job.job_result === "object" ? job.job_result : {};

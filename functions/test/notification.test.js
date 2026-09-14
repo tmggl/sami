@@ -30,6 +30,16 @@ test("builds a registrant confirmation with the course and direct group link", (
   assert.doesNotMatch(message, /mode=/);
 });
 
+test("confirms multiple children sharing one phone in a single message", () => {
+  const message = buildRegistrantConfirmationMessage(
+    { formTitle: "طلب الالتحاق بمعسكر الأشبال", familyNames: ["أحمد", "محمد"] },
+    "https://chat.whatsapp.com/FpLB6lJn9KVCCwzy8UPU0f"
+  );
+  assert.match(message, /تسجيل 2 من الأشبال/);
+  assert.match(message, /أحمد، محمد/);
+  assert.equal((message.match(/chat\.whatsapp\.com/g) || []).length, 1);
+});
+
 test("keeps WhatsApp invite links direct while removing tracking parameters", () => {
   assert.equal(
     normalizeWhatsAppGroupUrl("https://chat.whatsapp.com/AbCdEfGhIjKlMnOpQrStUv?s=cl&p=a"),

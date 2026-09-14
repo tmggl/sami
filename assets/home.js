@@ -133,8 +133,8 @@ function renderInlineForm(program) {
       <button class="inline-close" type="button" data-program-close="${escapeHTML(program.id)}" aria-label="إغلاق نموذج التسجيل">×</button>
     </div>
     <div class="inline-no-payment">✓ لا يوجد دفع الآن — سنتواصل معك أولًا</div>
-    <form class="inline-registration-form" data-program-id="${escapeHTML(program.id)}" novalidate>
-      ${(program.questions || []).map((question, index) => renderQuestion(program.id, question, index)).join("")}
+    <form class="inline-registration-form" data-program-id="${escapeHTML(program.id)}" data-next-child-index="1" novalidate>
+      ${program.id === "junior" ? `<div class="junior-children">${renderJuniorChild(program, 0)}</div><button class="add-junior-child" type="button" data-add-junior-child>+ إضافة ابن آخر</button><p class="junior-family-help">يمكن تسجيل جميع الأبناء في طلب واحد. يمكنك استخدام رقم ولي الأمر نفسه أو رقم مختلف لكل ابن.</p>` : (program.questions || []).map((question, index) => renderQuestion(program.id, question, index)).join("")}
       <div class="inline-form-alert" role="alert"></div>
       <div class="inline-submit-row">
         <button class="inline-submit" type="submit">${escapeHTML(program.submitLabel || "إرسال الطلب")} <span aria-hidden="true">←</span></button>
@@ -143,10 +143,17 @@ function renderInlineForm(program) {
     </form>`;
 }
 
-function renderQuestion(programId, question, index) {
+function renderJuniorChild(program, childIndex) {
+  return `<section class="junior-child" data-junior-child="${childIndex}">
+    <div class="junior-child-head"><h5>بيانات الابن <span data-child-number>${childIndex + 1}</span></h5>${childIndex ? '<button type="button" class="remove-junior-child" data-remove-junior-child aria-label="حذف هذا الابن">حذف الإضافة ×</button>' : ""}</div>
+    ${(program.questions || []).map((question, index) => renderQuestion(program.id, question, index, childIndex)).join("")}
+  </section>`;
+}
+
+function renderQuestion(programId, question, index, childIndex = null) {
   const required = question.required ? "required" : "";
   const requiredMark = question.required ? `<span class="inline-required" aria-label="مطلوب"> *</span>` : "";
-  const name = escapeHTML(question.id || `question-${index + 1}`);
+  const name = escapeHTML(`${childIndex === null ? "" : `child-${childIndex}-`}${question.id || `question-${index + 1}`}`);
   const inputId = `inline-${escapeHTML(programId)}-${name}`;
   const label = `<label class="inline-question-label" for="${inputId}">${escapeHTML(question.label)}${requiredMark}</label>`;
   const helpText = question.type === "tel" ? "يجب أن يبدأ الرقم بـ 05 ويتكون من 10 أرقام." : question.help;
@@ -212,6 +219,28 @@ function toggleProgram(programId, forceOpen) {
 }
 
 programsGrid.addEventListener("click", event => {
+  const addChild = event.target.closest("[data-add-junior-child]");
+  if (addChild) {
+    const form = addChild.closest(".inline-registration-form");
+    const program = displayedPrograms.find(item => item.id === "junior");
+    const childIndex = Number(form.dataset.nextChildIndex || 1);
+    form.dataset.nextChildIndex = String(childIndex + 1);
+    form.querySelector(".junior-children").insertAdjacentHTML("beforeend", renderJuniorChild(program, childIndex));
+    const first = form.querySelector('[data-junior-child="0"]');
+    const added = form.querySelector(`[data-junior-child="${childIndex}"]`);
+    for (const field of ["guardian", "phone"]) added.querySelector(`[name="child-${childIndex}-${field}"]`).value = first.querySelector(`[name="child-0-${field}"]`).value;
+    added.scrollIntoView({ behavior: "smooth", block: "start" });
+    hasUserInteraction = true;
+    return;
+  }
+  const removeChild = event.target.closest("[data-remove-junior-child]");
+  if (removeChild) {
+    const form = removeChild.closest(".inline-registration-form");
+    removeChild.closest("[data-junior-child]").remove();
+    form.querySelectorAll("[data-child-number]").forEach((number, index) => { number.textContent = index + 1; });
+    hasUserInteraction = true;
+    return;
+  }
   const openProgram = event.target.closest("[data-open-program]");
   if (openProgram) {
     toggleProgram(openProgram.dataset.openProgram, true);
@@ -255,13 +284,13 @@ async function submitInlineForm(event) {
   const button = formElement.querySelector(".inline-submit");
   if (!program) return;
 
-  const phoneInput = formElement.querySelector('input[type="tel"]');
-  if (phoneInput) enforceLocalPhone(phoneInput);
+  const phoneInputs = [...formElement.querySelectorAll('input[type="tel"]')];
+  phoneInputs.forEach(enforceLocalPhone);
 
   if (!formElement.checkValidity()) {
     formElement.reportValidity();
     alertBox.className = "inline-form-alert error";
-    alertBox.textContent = phoneInput && !/^05[0-9]{8}$/.test(phoneInput.value)
+    alertBox.textContent = phoneInputs.some(input => !/^05[0-9]{8}$/.test(input.value))
       ? "رقم الجوال يجب أن يبدأ بـ 05 ويتكون من 10 أرقام."
       : "يرجى إكمال جميع الحقول المطلوبة.";
     return;
@@ -273,19 +302,18 @@ async function submitInlineForm(event) {
   alertBox.textContent = "";
 
   const formData = new FormData(formElement);
-  const answers = {};
-  for (const question of program.questions || []) {
-    answers[question.id] = question.type === "checkbox" ? formData.getAll(question.id) : (formData.get(question.id) || "");
-  }
-  const payload = {
-    formId: program.id,
-    answers,
-    clientRequestId: createRequestId()
-  };
+  const readAnswers = prefix => Object.fromEntries((program.questions || []).map(question => {
+    const key = `${prefix}${question.id}`;
+    return [question.id, question.type === "checkbox" ? formData.getAll(key) : (formData.get(key) || "")];
+  }));
+  const children = program.id === "junior"
+    ? [...formElement.querySelectorAll("[data-junior-child]")].map(child => readAnswers(`child-${child.dataset.juniorChild}-`))
+    : null;
+  const payload = { formId: program.id, clientRequestId: createRequestId(), ...(children ? { children } : { answers: readAnswers("") }) };
 
   try {
     await createRegistration(payload);
-    showInlineSuccess(formElement, program, answers);
+    showInlineSuccess(formElement, program, children?.[0] || payload.answers, children);
   } catch (error) {
     console.error("تعذر حفظ التسجيل", error);
     saveResponseLocally(payload);
@@ -296,14 +324,15 @@ async function submitInlineForm(event) {
   }
 }
 
-function showInlineSuccess(formElement, program, answers, overrideMessage = "") {
+function showInlineSuccess(formElement, program, answers, children = null, overrideMessage = "") {
   const panel = formElement.closest(".program-inline-panel");
+  const familyMessage = children?.length > 1 ? `تم حفظ طلب تسجيل ${children.length} من الأبناء بنجاح. ستظهر بيانات كل ابن لدى الإدارة، وسنرسل تأكيدًا واحدًا لكل رقم جوال مستخدم.` : "";
   panel.innerHTML = `<div class="inline-success" role="status">
     <div class="inline-success-icon">✓</div>
     <small>تم الإرسال بنجاح</small>
     <h4>${escapeHTML(program.successTitle || "تم استلام طلبك")}</h4>
-    <p>${escapeHTML(overrideMessage || program.successMessage || "سنتواصل معك قريبًا عبر واتساب.")}</p>
-    ${answers.name ? `<div class="inline-success-name">الطلب باسم: <b>${escapeHTML(answers.name)}</b></div>` : ""}
+    <p>${escapeHTML(overrideMessage || familyMessage || program.successMessage || "سنتواصل معك قريبًا عبر واتساب.")}</p>
+    ${children?.length > 1 ? `<div class="inline-success-name">الأبناء المسجلون: <b>${escapeHTML(children.map(child => child.name).join("، "))}</b></div>` : answers.name ? `<div class="inline-success-name">الطلب باسم: <b>${escapeHTML(answers.name)}</b></div>` : ""}
     <div class="inline-success-actions">
       <button class="inline-again" type="button" data-program-reset="${escapeHTML(program.id)}">تقديم طلب آخر</button>
       <button class="inline-done" type="button" data-program-close="${escapeHTML(program.id)}">إغلاق</button>
@@ -330,12 +359,12 @@ function saveResponseLocally(payload) {
 }
 
 async function createRegistration(payload, timeout = 9000) {
-  const response = await fetchWithTimeout("/api/registrations", {
+  const response = await fetchWithTimeout(payload.children ? "/api/registrations/family" : "/api/registrations", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
-    keepalive: true
-  }, timeout);
+    keepalive: !payload.children
+  }, payload.children ? Math.max(timeout, 20000) : timeout);
   const result = await response.json().catch(() => ({}));
   if (!response.ok) {
     const error = new Error(`API ${response.status}`);
@@ -353,11 +382,12 @@ async function syncLocalResponses() {
   for (const item of pending) {
     item.clientRequestId ||= createRequestId();
     const answers = { ...(item.answers || {}) };
-    answers.phone = toLocalPhone(answers.phone);
+    if (item.children) item.children = item.children.map(child => ({ ...child, phone: toLocalPhone(child.phone) }));
+    else answers.phone = toLocalPhone(answers.phone);
     try {
       await createRegistration({
         formId: item.formId,
-        answers,
+        ...(item.children ? { children: item.children } : { answers }),
         clientRequestId: item.clientRequestId
       }, 5000);
     } catch (error) {
