@@ -63,7 +63,7 @@ function validateQuestionAnswer(question, rawValue) {
 
 export function validateRegistrationInput(body, form) {
   if (!body || typeof body !== "object" || Array.isArray(body)) throw new ValidationError("بيانات الطلب غير صحيحة.");
-  if (form.status !== "published") throw new ValidationError("التسجيل غير متاح لهذا البرنامج حاليًا.");
+  if (form.status !== "published") throw new ValidationError(form.registrationMessage || "التسجيل غير متاح لهذا البرنامج حاليًا.");
   const formId = text(body.formId, 80, "formId", true);
   if (formId !== form.id) throw new ValidationError("البرنامج المحدد غير صحيح.", "formId");
   if (!body.answers || typeof body.answers !== "object" || Array.isArray(body.answers)) throw new ValidationError("إجابات النموذج غير صحيحة.");

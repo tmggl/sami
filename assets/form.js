@@ -1,3 +1,4 @@
+import { applyRegistrationAvailability } from "./registration-availability.js?v=20261004-full-1";
 import { DEFAULT_FORMS, escapeHTML } from "./forms-config.js?v=20260913-riyadh-only-1";
 import { fetchWithTimeout } from "./firestore-rest.js?v=20260911-api-1";
 
@@ -29,7 +30,7 @@ const publicFormOverrides = {
 };
 
 function applyPublicOverrides(form) {
-  return { ...form, ...(publicFormOverrides[form.id] || {}) };
+  return applyRegistrationAvailability({ ...form, ...(publicFormOverrides[form.id] || {}) });
 }
 
 function localForm() {
@@ -60,12 +61,12 @@ function renderForm() {
     <span class="eyebrow">${escapeHTML(activeForm.eyebrow || "برنامج تدريبي")}</span>
     <h1>${escapeHTML(activeForm.title)}</h1>
     <p>${escapeHTML(activeForm.description || "")}</p>
-    <div class="no-payment">✓ لا يوجد دفع الآن — سنتواصل معك أولًا</div>
+    ${activeForm.status === "published" ? `<div class="no-payment">✓ لا يوجد دفع الآن — سنتواصل معك أولًا</div>
     <div class="key-requirements" aria-label="متطلبات مهمة">
       <div><span aria-hidden="true">▣</span><p><b>الجهاز شرط أساسي</b><small>${escapeHTML(deviceRequirement)}</small></p></div>
       <div><span aria-hidden="true">⌁</span><p><b>الإنترنت</b><small>${escapeHTML(internetRequirement)}</small></p></div>
       <div><span aria-hidden="true">✦</span><p><b>مساعد الذكاء الاصطناعي</b><small><span class="tiny-price" dir="ltr"><img src="assets/saudi-riyal-symbol.svg" alt="ريال سعودي">90</span> اشتراك شخصي يُلغى في أي وقت</small></p></div>
-    </div>
+    </div>` : ""}
   `;
 
   detailsCard.innerHTML = `
@@ -75,12 +76,13 @@ function renderForm() {
     </dl>
   `;
 
+  document.querySelector(".steps-card").hidden = activeForm.status !== "published";
+
   if (activeForm.status !== "published") {
     container.innerHTML = `
-      <div class="success-view">
-        <div class="success-icon">⏳</div>
-        <h2>التسجيل غير متاح حاليًا</h2>
-        <p>سيُفتح النموذج عند بدء استقبال الطلبات. يمكنك العودة لاحقًا.</p>
+      <div class="success-view registration-closed">
+        <h2>${activeForm.status === "closed" ? escapeHTML(activeForm.registrationMessage) : "التسجيل غير متاح حاليًا"}</h2>
+        ${activeForm.status === "closed" ? "" : "<p>سيُفتح النموذج عند بدء استقبال الطلبات. يمكنك العودة لاحقًا.</p>"}
         <a class="ghost-btn" href="index.html">العودة للموقع</a>
       </div>`;
     return;

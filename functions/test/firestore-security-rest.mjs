@@ -41,8 +41,8 @@ const messageTemplate = (updatedBy, overrides = {}) => ({
 });
 const registration = (overrides = {}) => ({
   fields: {
-    formId: stringValue("junior"),
-    formTitle: stringValue("دورة برمجة الأشبال"),
+    formId: stringValue("remote"),
+    formTitle: stringValue("الدورة عن بُعد"),
     answers: { mapValue: { fields: {
       name: stringValue("اختبار قواعد الأمان"),
       phone: stringValue("0555555555"),
@@ -76,6 +76,17 @@ await call("/forms/remote", {
   body: { fields: { status: stringValue("published"), title: stringValue("الدورة عن بُعد") } },
 });
 
+for (const id of ["in-person", "junior"]) {
+  await call(`/forms/${id}`, {
+    method: "PATCH", admin: true,
+    body: { fields: { status: stringValue("published") } },
+  });
+  const result = await call(`/registrations?documentId=full-${id}`, {
+    method: "POST", body: registration({ formId: stringValue(id) }),
+  });
+  assert.equal(result.status, 403, `${id} must reject registrations even when published`);
+}
+
 const valid = await call("/registrations?documentId=valid-registration", { method: "POST", body: registration() });
 assert.equal(valid.status, 200, `valid registration should be accepted (${valid.status})`);
 
@@ -101,6 +112,10 @@ assert.equal(publicUpdate.status, 403, "public status updates must be denied");
 const publicDelete = await call("/registrations/valid-registration", { method: "DELETE" });
 assert.equal(publicDelete.status, 403, "public registration deletes must be denied");
 
+// Existing junior registrations must remain manageable after registration closes.
+await call("/registrations/valid-registration", {
+  method: "PATCH", admin: true, body: registration({ formId: stringValue("junior") }),
+});
 const juniorRead = await call("/registrations/valid-registration", { token: juniorToken });
 assert.equal(juniorRead.status, 200, "junior admin must read junior registrations");
 
@@ -183,7 +198,7 @@ longTextBody.fields.answers.mapValue.fields.notes = stringValue("x".repeat(1001)
 const longText = await call("/registrations?documentId=long-text", { method: "POST", body: longTextBody });
 assert.equal(longText.status, 403, "oversized answers must be denied");
 
-await call("/forms/junior?updateMask.fieldPaths=status", {
+await call("/forms/remote?updateMask.fieldPaths=status", {
   method: "PATCH",
   admin: true,
   body: { fields: { status: stringValue("draft") } },

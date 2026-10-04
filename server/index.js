@@ -1,3 +1,4 @@
+import { applyRegistrationAvailability } from "../assets/registration-availability.js";
 import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -71,7 +72,7 @@ app.get("/api/health", async (_req, res, next) => {
 app.get("/api/forms", async (_req, res, next) => {
   try {
     const result = await pool.query("SELECT id, data FROM forms WHERE data->>'status' <> 'deleted' ORDER BY updated_at, id");
-    res.json({ items: result.rows.map(row => ({ id: row.id, ...row.data })) });
+    res.json({ items: result.rows.map(row => applyRegistrationAvailability({ ...row.data, id: row.id })) });
   } catch (error) {
     next(error);
   }
@@ -81,7 +82,7 @@ app.get("/api/forms/:id", async (req, res, next) => {
   try {
     const result = await pool.query("SELECT id, data FROM forms WHERE id = $1 AND data->>'status' <> 'deleted'", [req.params.id]);
     if (!result.rowCount) return res.status(404).json({ error: "النموذج غير موجود." });
-    res.json({ item: { id: result.rows[0].id, ...result.rows[0].data } });
+    res.json({ item: applyRegistrationAvailability({ ...result.rows[0].data, id: result.rows[0].id }) });
   } catch (error) {
     next(error);
   }
@@ -92,7 +93,7 @@ app.post("/api/registrations", registrationLimiter, async (req, res, next) => {
   try {
     const formResult = await client.query("SELECT id, data FROM forms WHERE id = $1", [String(req.body?.formId || "")]);
     if (!formResult.rowCount) throw new ValidationError("البرنامج المحدد غير موجود.", "formId");
-    const form = { id: formResult.rows[0].id, ...formResult.rows[0].data };
+    const form = applyRegistrationAvailability({ ...formResult.rows[0].data, id: formResult.rows[0].id });
     const input = validateRegistrationInput(req.body, form);
     const registrationId = crypto.randomUUID();
 
@@ -128,7 +129,7 @@ app.post("/api/registrations/family", registrationLimiter, async (req, res, next
     client = await pool.connect();
     const formResult = await client.query("SELECT id, data FROM forms WHERE id = 'junior'");
     if (!formResult.rowCount) throw new ValidationError("معسكر الأشبال غير موجود.", "formId");
-    const form = { id: "junior", ...formResult.rows[0].data };
+    const form = applyRegistrationAvailability({ ...formResult.rows[0].data, id: "junior" });
     const input = validateFamilyRegistrationInput(req.body, form);
     const batchId = crypto.randomUUID();
     await client.query("BEGIN");

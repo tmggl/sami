@@ -56,7 +56,8 @@ service cloud.firestore {
     }
 
     function validPublishedForm() {
-      return exists(/databases/$(database)/documents/forms/$(request.resource.data.formId))
+      return !(request.resource.data.formId in ['in-person', 'junior'])
+        && exists(/databases/$(database)/documents/forms/$(request.resource.data.formId))
         && get(/databases/$(database)/documents/forms/$(request.resource.data.formId)).data.status == 'published';
     }
 

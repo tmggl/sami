@@ -1,3 +1,4 @@
+import { applyRegistrationAvailability } from "./registration-availability.js?v=20261004-full-1";
 import { DEFAULT_FORMS, escapeHTML } from "./forms-config.js?v=20260913-riyadh-only-1";
 import { fetchWithTimeout } from "./firestore-rest.js?v=20260911-api-1";
 
@@ -52,7 +53,7 @@ const presentation = {
 
 function normalizeProgram(program) {
   if (program.status === "deleted") return program;
-  return { ...program, ...(homepageOverrides[program.id] || {}) };
+  return applyRegistrationAvailability({ ...program, ...(homepageOverrides[program.id] || {}) });
 }
 
 function mergePrograms(remote) {
@@ -97,6 +98,7 @@ function renderProgram(program) {
     features: (program.details || []).slice(0, 4).map(item => `${item.label}: ${item.value}`)
   };
   const isOpen = program.status === "published";
+  const isFull = program.status === "closed";
   const price = String(Math.round(Number(program.price) || 0));
   const oldPrice = Number(program.oldPrice) > Number(program.price) ? String(Math.round(Number(program.oldPrice))) : "";
   const image = visual.image
@@ -104,7 +106,7 @@ function renderProgram(program) {
     : `<div class="program-visual-placeholder" aria-hidden="true">${visual.icon}</div>`;
   const panelId = `program-panel-${program.id}`;
 
-  return `<article class="program-card ${visual.className} ${isOpen ? "" : "program-upcoming"}" data-program-card="${escapeHTML(program.id)}">
+  return `<article class="program-card ${visual.className} ${isOpen ? "" : (isFull ? "program-full" : "program-upcoming")}" data-program-card="${escapeHTML(program.id)}">
     <div class="program-card-summary" ${isOpen ? `role="button" tabindex="0" aria-expanded="false" aria-controls="${panelId}"` : 'aria-disabled="true"'} data-program-toggle="${escapeHTML(program.id)}">
       <div class="program-visual">
         ${image}
@@ -115,12 +117,12 @@ function renderProgram(program) {
         <div class="program-heading"><div class="program-icon" aria-hidden="true">${visual.icon}</div><h3>${escapeHTML(program.cardTitle || program.title)}</h3></div>
         <p class="program-description">${escapeHTML(program.cardDescription || program.description || "")}</p>
         ${visual.certification ? `<div class="certification-badge"><span aria-hidden="true">✓</span><strong>${escapeHTML(visual.certification)}</strong></div>` : ""}
-        <div class="program-price" dir="ltr"><span class="price-currency"><img src="assets/saudi-riyal-symbol.svg" alt="ريال سعودي"></span><strong class="price-number">${price}</strong>${oldPrice ? `<span class="previous-price" dir="rtl"><small>سابقًا</small><del dir="ltr">${oldPrice}</del></span>` : ""}<small class="price-note" dir="rtl">${oldPrice ? "سعر العرض" : (isOpen ? "الدفع بعد التأكيد" : "يفتح التسجيل قريبًا")}</small></div>
+        <div class="program-price" dir="ltr"><span class="price-currency"><img src="assets/saudi-riyal-symbol.svg" alt="ريال سعودي"></span><strong class="price-number">${price}</strong>${oldPrice ? `<span class="previous-price" dir="rtl"><small>سابقًا</small><del dir="ltr">${oldPrice}</del></span>` : ""}<small class="price-note" dir="rtl">${isFull ? "التسجيل مغلق" : (oldPrice ? "سعر العرض" : (isOpen ? "الدفع بعد التأكيد" : "يفتح التسجيل قريبًا"))}</small></div>
         <ul class="program-features">${visual.features.map(feature => `<li>${escapeHTML(feature)}</li>`).join("")}</ul>
-        <div class="program-actions">
+        ${isFull ? `<p class="program-full-notice">${escapeHTML(program.registrationMessage)}</p>` : `<div class="program-actions">
           <span class="register-button">${isOpen ? "افتح نموذج التسجيل" : "قريبًا"}</span>
           <span class="details-button">${isOpen ? "التفاصيل والتسجيل" : "لا يوجد تقديم حاليًا"}</span>
-        </div>
+        </div>`}
       </div>
     </div>
     ${isOpen ? `<div class="program-inline-panel" id="${panelId}" hidden>${renderInlineForm(program)}</div>` : ""}
@@ -193,7 +195,7 @@ function renderQuestion(programId, question, index, childIndex = null) {
 function toggleProgram(programId, forceOpen) {
   const card = [...programsGrid.querySelectorAll("[data-program-card]")]
     .find(item => item.dataset.programCard === programId);
-  if (!card || card.classList.contains("program-upcoming")) return;
+  if (!card || !card.querySelector(".program-inline-panel")) return;
   const summary = card.querySelector(".program-card-summary");
   const panel = card.querySelector(".program-inline-panel");
   const shouldOpen = forceOpen ?? panel.hidden;

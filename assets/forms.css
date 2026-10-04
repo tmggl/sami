@@ -116,6 +116,8 @@ textarea.field { min-height: 110px; resize: vertical; }
 .success-view { padding: 42px 28px; text-align: center; }
 .success-icon { width: 66px; height: 66px; display: grid; place-items: center; border-radius: 50%; background: #e4f8ef; color: var(--teal); font-size: 30px; margin: 0 auto 18px; }
 .success-view h2 { margin: 0 0 8px; font-size: 25px; }
+.registration-closed { background: #f3f3f3; border-radius: inherit; }
+.registration-closed h2 { color: #1757a6; line-height: 1.8; margin-bottom: 22px; text-wrap: balance; }
 .success-view p { color: var(--muted); max-width: 510px; margin: 0 auto 22px; }
 
 .form-sidebar { position: sticky; top: 20px; display: grid; gap: 16px; }
