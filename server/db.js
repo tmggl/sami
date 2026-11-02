@@ -3,7 +3,7 @@ import { DEFAULT_FORMS, DEFAULT_MESSAGES } from "../assets/forms-config.js";
 
 const { Pool } = pg;
 
-export function createPool(connectionString = process.env.DATABASE_URL) {
+export function createPool(connectionString = process.env.DATABASE_URL, sslMode = process.env.DATABASE_SSL) {
   if (!connectionString) throw new Error("DATABASE_URL is required");
   return new Pool({
     connectionString,
@@ -11,8 +11,27 @@ export function createPool(connectionString = process.env.DATABASE_URL) {
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 8_000,
     keepAlive: true,
-    ssl: process.env.DATABASE_SSL === "disable" ? false : { rejectUnauthorized: false }
+    application_name: process.env.DATABASE_APPLICATION_NAME || "sami-training",
+    ssl: sslMode === "disable" ? false : { rejectUnauthorized: sslMode === "verify-full" || process.env.DATABASE_SSL_VERIFY === "true" }
   });
+}
+
+export function createManagedPool(connectionString = process.env.DATABASE_URL) {
+  let current = createPool(connectionString);
+  if (!process.env.MIGRATION_CONTROL_DIR) return current;
+  const switchDatabase = async (url, sslMode) => {
+    const replacement = createPool(url, sslMode);
+    try { await replacement.query({ text: "SELECT 1", query_timeout: 8000 }); }
+    catch (error) { await replacement.end(); throw error; }
+    const previous = current;
+    current = replacement;
+    await previous.end();
+  };
+  return new Proxy({}, { get(_target, key) {
+    if (key === "switchDatabase") return switchDatabase;
+    const value = current[key];
+    return typeof value === "function" ? value.bind(current) : value;
+  } });
 }
 
 export async function initializeDatabase(pool) {

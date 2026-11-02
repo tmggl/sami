@@ -1,4 +1,5 @@
 import { createRequire } from "node:module";
+import { migrationControl } from "./migration-control.js";
 
 const require = createRequire(import.meta.url);
 const {
@@ -10,6 +11,7 @@ const {
 } = require("../functions/lib/notification.js");
 
 let processing = false;
+migrationControl.setBusyReader(() => processing);
 
 export function familySmsPlan(siblings, job) {
   const phone = normalizeSaudiMobile(job.answers?.phone);
@@ -37,16 +39,19 @@ export function triggerNotificationWorker(pool) {
 }
 
 export async function processNotificationJobs(pool, limit = 5) {
-  if (processing) return;
+  if (processing || process.env.NOTIFICATION_WORKER_ENABLED === "false" || migrationControl.isPaused()) return;
   processing = true;
+  migrationControl.record();
   try {
     for (let index = 0; index < limit; index += 1) {
+      if (migrationControl.isPaused()) break;
       const job = await claimJob(pool);
       if (!job) break;
       await deliverJob(pool, job);
     }
   } finally {
     processing = false;
+    migrationControl.record();
   }
 }
 

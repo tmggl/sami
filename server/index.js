@@ -5,7 +5,8 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
-import { createPool, initializeDatabase, registrationFromRow, audit } from "./db.js";
+import { createManagedPool, initializeDatabase, registrationFromRow, audit } from "./db.js";
+import { migrationControl, installMigrationSignals } from "./migration-control.js";
 import { requireAdmin, requirePrimary, canAccessForm } from "./auth.js";
 import { processNotificationJobs, triggerNotificationWorker } from "./notifications.js";
 import {
@@ -19,11 +20,12 @@ import {
 
 const rootDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const app = express();
-const pool = createPool();
+const pool = createManagedPool();
 const port = Number(process.env.PORT || 10000);
 
 app.set("trust proxy", 1);
 app.disable("x-powered-by");
+app.use(migrationControl.middleware);
 app.use(helmet({
   crossOriginEmbedderPolicy: false,
   contentSecurityPolicy: {
@@ -342,6 +344,7 @@ app.use((error, req, res, _next) => {
 });
 
 await initializeDatabase(pool);
+installMigrationSignals(pool);
 const server = app.listen(port, "0.0.0.0", () => {
   console.log(`Sami training server listening on ${port}`);
   triggerNotificationWorker(pool);
