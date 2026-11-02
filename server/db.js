@@ -1,5 +1,6 @@
 import pg from "pg";
 import { DEFAULT_FORMS, DEFAULT_MESSAGES } from "../assets/forms-config.js";
+import { readMigrationDatabaseConfig } from "./migration-control.js";
 
 const { Pool } = pg;
 
@@ -17,7 +18,8 @@ export function createPool(connectionString = process.env.DATABASE_URL, sslMode 
 }
 
 export function createManagedPool(connectionString = process.env.DATABASE_URL) {
-  let current = createPool(connectionString);
+  const persisted = readMigrationDatabaseConfig();
+  let current = createPool(persisted?.url || connectionString, persisted?.sslMode);
   if (!process.env.MIGRATION_CONTROL_DIR) return current;
   const switchDatabase = async (url, sslMode) => {
     const replacement = createPool(url, sslMode);

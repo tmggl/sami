@@ -1,7 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { createMigrationControl } from "../server/migration-control.js";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { createMigrationControl, readMigrationDatabaseConfig } from "../server/migration-control.js";
 import { processNotificationJobs } from "../server/notifications.js";
 
 const request = () => ({ path: "/api/registrations" });
@@ -55,4 +58,18 @@ test("standby cannot claim or send any notification", async () => {
   process.env.NOTIFICATION_WORKER_ENABLED = "false";
   try { await processNotificationJobs({ connect() { throw new Error("must not connect"); } }); }
   finally { if (old === undefined) delete process.env.NOTIFICATION_WORKER_ENABLED; else process.env.NOTIFICATION_WORKER_ENABLED = old; }
+});
+test("persisted database cutover is reused after restart and malformed config fails closed", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "sami-migration-config-"));
+  try {
+    assert.equal(readMigrationDatabaseConfig(dir), null);
+    const config = { url: "postgresql://app@local-db/training", sslMode: "disable", generation: "local" };
+    fs.writeFileSync(path.join(dir, "database.json"), JSON.stringify(config));
+    assert.deepEqual(readMigrationDatabaseConfig(dir), config);
+    assert.equal(createMigrationControl({ enabled: true, initialGeneration: config.generation }).snapshot().generation, "local");
+    for (const invalid of ["{", JSON.stringify({ ...config, url: "https://invalid.example" }), JSON.stringify({ ...config, sslMode: "insecure" })]) {
+      fs.writeFileSync(path.join(dir, "database.json"), invalid);
+      assert.throws(() => readMigrationDatabaseConfig(dir), /INVALID_MIGRATION_CONFIGURATION/);
+    }
+  } finally { fs.rmSync(dir, { recursive: true }); }
 });
